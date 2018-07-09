@@ -10,6 +10,7 @@ setup(
     author='Daan van der Kallen',
     author_email='mail@daanvdk.com',
     keywords=['django', 'tally', 'buckets'],
+    test_suite='tests',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -23,5 +24,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Topic :: Utilities',
     ],
-    test_suite='tests',
+    install_requires=[
+        'Django >= 1.11',
+    ],
 )
