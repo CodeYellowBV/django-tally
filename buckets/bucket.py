@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from django.db import models
 from django.db.models.signals import post_init, post_save, post_delete
-from django.dispatch import receiver
+from django.dispatch import Signal, receiver
 
 
 def model_instance_to_dict(instance):
@@ -107,6 +107,9 @@ class Bucket(ABC):
 
     def __init__(self):
         self.tally = self.get_tally()
+        self.__post_init_receivers = []
+        self.__post_save_receivers = []
+        self.__post_delete_receivers = []
 
     def handle(self, model, old_data, new_data):
         """
@@ -152,13 +155,12 @@ class Bucket(ABC):
         ):
             model_data = {}
 
-            @receiver(post_init, sender=base_class, weak=False)
+            @receiver(post_init, sender=base_class)
             def handle_post_init(sender, instance, **kwargs):
                 model_data[instance.pk] = model_instance_to_dict(instance)
 
-            @receiver(post_save, sender=base_class, weak=False)
+            @receiver(post_save, sender=base_class)
             def handle_post_save(sender, instance, created, **kwargs):
-                model_data[instance.pk] = model_instance_to_dict(instance)
                 if created:
                     old_data = None
                 else:
@@ -167,10 +169,30 @@ class Bucket(ABC):
                 self.handle(base_class, old_data, new_data)
                 model_data[instance.pk] = new_data
 
-            @receiver(post_delete, sender=base_class, weak=False)
+            @receiver(post_delete, sender=base_class)
             def handle_post_delete(sender, instance, **kwargs):
                 self.handle(base_class, model_data[instance.pk], None)
                 del model_data[instance.pk]
 
+            self.__post_init_receivers.append(handle_post_init)
+            self.__post_save_receivers.append(handle_post_save)
+            self.__post_delete_receivers.append(handle_post_delete)
+
         for subclass in base_class.__subclasses__():
             self.listen(subclass)
+
+    def close(self):
+        """
+        Close all the Bucket's listeners.
+        """
+        for r in self.__post_init_receivers:
+            post_init.disconnect(r)
+        self.__post_init_receivers = []
+
+        for r in self.__post_save_receivers:
+            post_save.disconnect(r)
+        self.__post_save_receivers = []
+
+        for r in self.__post_delete_receivers:
+            post_delete.disconnect(r)
+        self.__post_delete_receivers = []

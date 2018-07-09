@@ -1,49 +1,107 @@
 from django.test import TestCase
+from django.db.models import Model
 
-from buckets import Bucket, SumMixin
+from buckets import Bucket, SumMixin, ProductMixin
 
 from .testapp.models import Foo
 
 
 class ModelCounter(SumMixin, Bucket):
+    """
+    Tallies the amount of models.
+    """
+
     def get_value(self, model, data):
         return 1
 
 
+class FooProduct(ProductMixin, Bucket):
+    """
+    Tallies the product of the value attribute of Foo instances.
+    """
+
+    def accept_model(self, model):
+        return issubclass(model, Foo)
+
+    def get_value(self, model, data):
+        return data['value']
+
+
 class ModelCounterTest(TestCase):
 
-    def setUp(self):
-        self.counter = ModelCounter()
-        self.counter.listen(Foo)
-
     def test_simple_count(self):
-        self.assertCount(0)
+        counter = ModelCounter()
+        counter.listen(Foo)
+
+        # Initial value
+        self.assertEqual(counter.tally, 0)
 
         # Create two models but do not save yet
         foo1 = Foo()
         foo2 = Foo()
-
-        self.assertCount(0)
+        self.assertEqual(counter.tally, 0)
 
         # Save model 1
         foo1.save()
-
-        self.assertCount(1)
+        self.assertEqual(counter.tally, 1)
 
         # Save model 2
         foo2.save()
-
-        self.assertCount(2)
+        self.assertEqual(counter.tally, 2)
 
         # Delete model 1
         foo1.delete()
-
-        self.assertCount(1)
+        self.assertEqual(counter.tally, 1)
 
         # Save model 2 without changes
         foo2.save()
+        self.assertEqual(counter.tally, 1)
 
-        self.assertCount(1)
+    def test_product(self):
+        product = FooProduct()
+        product.listen(Model)
 
-    def assertCount(self, value):
-        self.assertEqual(self.counter.tally, value)
+        # Initial value
+        self.assertEqual(product.tally, 1)
+
+        # Create two models but do not save yet
+        foo1 = Foo(value=3)
+        foo2 = Foo(value=5)
+        self.assertEqual(product.tally, 1)
+
+        # Save model 1
+        foo1.save()
+        self.assertEqual(product.tally, 3)
+
+        # Save model 2
+        foo2.save()
+        self.assertEqual(product.tally, 15)
+
+        # Delete model 1
+        foo1.delete()
+        self.assertEqual(product.tally, 5)
+
+        # Save model 2 without changes
+        foo2.save()
+        self.assertEqual(product.tally, 5)
+
+        # Save model 2 with changes
+        foo2.value = 7
+        foo2.save()
+        self.assertEqual(product.tally, 7)
+
+    def test_disconnect(self):
+        counter = ModelCounter()
+        counter.listen(Foo)
+
+        # Initial value
+        self.assertEqual(counter.tally, 0)
+
+        # Save a model
+        Foo().save()
+        self.assertEqual(counter.tally, 1)
+
+        # Close counter and save a model
+        counter.close()
+        Foo().save()
+        self.assertEqual(counter.tally, 1)

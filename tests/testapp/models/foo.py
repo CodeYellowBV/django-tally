@@ -3,4 +3,4 @@ from django.db import models
 
 class Foo(models.Model):
 
-    value = models.IntegerField(default=0)
+    value = models.IntegerField(default=1)
