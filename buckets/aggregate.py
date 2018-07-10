@@ -18,8 +18,10 @@ class AggregateMixin(ABC):
         """
         Get value for the aggregate based on a model instance.
 
-        @param model: Class  Model of the updated instance.
-        @param data: Mapping Data of the model.
+        @param model: Class
+            Model of the updated instance.
+        @param data: Mapping
+            Data of the model.
         """
 
     def get_tally(self):

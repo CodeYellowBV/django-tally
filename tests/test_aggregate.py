@@ -31,7 +31,7 @@ class ModelCounterTest(TestCase):
 
     def test_simple_count(self):
         counter = ModelCounter()
-        counter.listen(Foo)
+        sub = counter.listen(Foo)
 
         # Initial value
         self.assertEqual(counter.tally, 0)
@@ -57,51 +57,50 @@ class ModelCounterTest(TestCase):
         foo2.save()
         self.assertEqual(counter.tally, 1)
 
+        sub.close()
+
     def test_product(self):
         product = FooProduct()
-        product.listen(Model)
+        with product.subscribe(Model):
+            # Initial value
+            self.assertEqual(product.tally, 1)
 
-        # Initial value
-        self.assertEqual(product.tally, 1)
+            # Create two models but do not save yet
+            foo1 = Foo(value=3)
+            foo2 = Foo(value=5)
+            self.assertEqual(product.tally, 1)
 
-        # Create two models but do not save yet
-        foo1 = Foo(value=3)
-        foo2 = Foo(value=5)
-        self.assertEqual(product.tally, 1)
+            # Save model 1
+            foo1.save()
+            self.assertEqual(product.tally, 3)
 
-        # Save model 1
-        foo1.save()
-        self.assertEqual(product.tally, 3)
+            # Save model 2
+            foo2.save()
+            self.assertEqual(product.tally, 15)
 
-        # Save model 2
-        foo2.save()
-        self.assertEqual(product.tally, 15)
+            # Delete model 1
+            foo1.delete()
+            self.assertEqual(product.tally, 5)
 
-        # Delete model 1
-        foo1.delete()
-        self.assertEqual(product.tally, 5)
+            # Save model 2 without changes
+            foo2.save()
+            self.assertEqual(product.tally, 5)
 
-        # Save model 2 without changes
-        foo2.save()
-        self.assertEqual(product.tally, 5)
-
-        # Save model 2 with changes
-        foo2.value = 7
-        foo2.save()
-        self.assertEqual(product.tally, 7)
+            # Save model 2 with changes
+            foo2.value = 7
+            foo2.save()
+            self.assertEqual(product.tally, 7)
 
     def test_disconnect(self):
         counter = ModelCounter()
-        counter.listen(Foo)
+        with counter.subscribe(Foo):
+            # Initial value
+            self.assertEqual(counter.tally, 0)
 
-        # Initial value
-        self.assertEqual(counter.tally, 0)
+            # Save a model
+            Foo().save()
+            self.assertEqual(counter.tally, 1)
 
-        # Save a model
-        Foo().save()
-        self.assertEqual(counter.tally, 1)
-
-        # Close counter and save a model
-        counter.close()
+        # Save a model when counter is closed
         Foo().save()
         self.assertEqual(counter.tally, 1)

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 from django.db import models
 from django.db.models.signals import post_init, post_save, post_delete
-from django.dispatch import Signal, receiver
 
 
 def model_instance_to_dict(instance):
@@ -10,8 +9,10 @@ def model_instance_to_dict(instance):
     Converts a Django model instance to a dict of values for all it's concrete
     non many to many fields.
 
-    @param instance: Model The model instance to convert.
-    @return: dict          The generated dict of values.
+    @param instance: Model
+        The model instance to convert.
+    @return: dict
+        The generated dict of values.
     """
     res = {}
 
@@ -43,7 +44,8 @@ class Bucket(ABC):
         """
         Get initial value for the tally.
 
-        @return: Any Initial value for the tally.
+        @return: Any
+            Initial value for the tally.
         """
 
     @abstractmethod
@@ -51,9 +53,12 @@ class Bucket(ABC):
         """
         Get event based on creation of model instance.
 
-        @param model: Class  Model of the updated instance.
-        @param data: Mapping New data of the model.
-        @return: Any         Event triggered by the update.
+        @param model: Class
+            Model of the updated instance.
+        @param data: Mapping
+            New data of the model.
+        @return: Any
+            Event triggered by the update.
         """
 
     @abstractmethod
@@ -61,10 +66,14 @@ class Bucket(ABC):
         """
         Get event based on update to model instance.
 
-        @param model: Class      Model of the updated instance.
-        @param old_data: Mapping Old data of the model.
-        @param new_data: Mapping New data of the model.
-        @return: Any             Event triggered by the update.
+        @param model: Class
+            Model of the updated instance.
+        @param old_data: Mapping
+            Old data of the model.
+        @param new_data: Mapping
+            New data of the model.
+        @return: Any
+            Event triggered by the update.
         """
 
     @abstractmethod
@@ -72,9 +81,12 @@ class Bucket(ABC):
         """
         Get event based on delete to model instance.
 
-        @param model: Class  Model of the updated instance.
-        @param data: Mapping Old data of the model.
-        @return: Any         Event triggered by the delete.
+        @param model: Class
+            Model of the updated instance.
+        @param data: Mapping
+            Old data of the model.
+        @return: Any
+            Event triggered by the delete.
         """
 
     @abstractmethod
@@ -82,17 +94,22 @@ class Bucket(ABC):
         """
         Update tally based on event.
 
-        @param tally: Any The current tally.
-        @param event: Any Event triggered.
-        @return: Any      The new tally.
+        @param tally: Any
+            The current tally.
+        @param event: Any
+            Event triggered.
+        @return: Any
+            The new tally.
         """
 
     def accept_model(self, model):
         """
         Determines whether the Bucket accepts updates from the given model.
 
-        @param model: Class Model of the updated instance.
-        @return: bool       Indicates if the model is accepted or not.
+        @param model: Class
+            Model of the updated instance.
+        @return: bool
+            Indicates if the model is accepted or not.
         """
         return True
 
@@ -100,38 +117,44 @@ class Bucket(ABC):
         """
         Handles updating the tally.
 
-        @param old_tally: The current tally.
-        @param new_tally: The new updated tally.
+        @param old_tally: Any
+            The current tally.
+        @param new_tally: Any
+            The new updated tally.
         """
         self.tally = new_tally
 
     def __init__(self):
+        """
+        Initialize Bucket.
+        """
         self.tally = self.get_tally()
-        self.__post_init_receivers = []
-        self.__post_save_receivers = []
-        self.__post_delete_receivers = []
+        self.__model_data = {}
 
     def handle(self, model, old_data, new_data):
         """
         Handle update to model instance.
 
-        @param model: Class      Model of the updated instance.
-        @param old_data: Mapping Old data of the model.
-        @param new_data: Mapping New data of the model.
+        @param model: Class
+            Model of the updated instance.
+        @param old_data: Mapping
+            Old data of the model.
+        @param new_data: Mapping
+            New data of the model.
         """
         if not self.accept_model(model):
             return
 
+        assert not (old_data is None and new_data is None), (
+            'old_data and new_data cannot both be None' 
+        )
+
         if old_data is None:
-            if new_data is None:
-                raise ValueError('old_data and new_data cannot both be None')
-            else:
-                event = self.handle_create(model, new_data)
+            event = self.handle_create(model, new_data)
+        elif new_data is None:
+            event = self.handle_delete(model, old_data)
         else:
-            if new_data is None:
-                event = self.handle_delete(model, old_data)
-            else:
-                event = self.handle_update(model, old_data, new_data)
+            event = self.handle_update(model, old_data, new_data)
 
         if event is None:
             return
@@ -139,60 +162,176 @@ class Bucket(ABC):
         new_tally = self.handle_event(self.tally, event)
         self.update_tally(self.tally, new_tally)
 
-    def listen(self, base_class=models.Model):
+    def _handle_post_init(self, sender, instance, **kwargs):
         """
-        Start listening to updates for all instances of base_class or any of
-        its subclasses.
+        Handle post_init signal from a connected model.
 
-        @param base_class: Class Model to listen for updates on.
+        @param sender: Class
+            Model that sent the event.
+        @param instance: sender
+            Instance that was initialized.
+        @param kwargs: Mapping
+            Remaining keyword arguments.
         """
-        if not (
-            base_class is models.Model or
-            (
-                hasattr(base_class, 'Meta') and
-                getattr(base_class.Meta, 'abstract', False)
-            )
+        self.__model_data[instance.pk] = model_instance_to_dict(instance)
+
+    def _handle_post_save(self, sender, instance, created, **kwargs):
+        """
+        Handle post_save signal from a connected model.
+
+        @param sender: Class
+            Model that sent the event.
+        @param instance: sender
+            Instance that was saved.
+        @param created: bool
+            If the instance was created with this save.
+        @param kwargs: Mapping
+            Remaining keyword arguments.
+        """
+        if created:
+            old_data = None
+        else:
+            old_data = self.__model_data[instance.pk]
+        new_data = model_instance_to_dict(instance)
+        self.handle(sender, old_data, new_data)
+        self.__model_data[instance.pk] = new_data
+
+    def _handle_post_delete(self, sender, instance, **kwargs):
+        """
+        Handle post_delete signal from a connected model.
+
+        @param sender: Class
+            Model that sent the event.
+        @param instance: sender
+            Instance that was deleted.
+        @param kwargs: Mapping
+            Remaining keyword arguments.
+        """
+        self.handle(sender, self.__model_data[instance.pk], None)
+        del self.__model_data[instance.pk]
+
+    def subscribe(self, sender=models.Model, sub=None):
+        """
+        Create a subscription to signals from a certain sender and it's
+        subclasses.
+
+        @param sender: Class
+            Sender to subscribe to.
+        @param sub: Bucket.Subscription
+            Existing subscription to extend. If given None the method will
+            create a new subscription object.
+        @return: Bucket.Subscription
+            Subscription object representing the subscribed signals.
+        """
+        if sub is None:
+            sub = Bucket.Subscription()
+
+        if sender is not models.Model and not (
+            hasattr(sender, 'Meta') and
+            getattr(sender.Meta, 'abstract', False)
         ):
-            model_data = {}
+            sub.add(post_init, self._handle_post_init, sender)
+            sub.add(post_save, self._handle_post_save, sender)
+            sub.add(post_delete, self._handle_post_delete, sender)
 
-            @receiver(post_init, sender=base_class)
-            def handle_post_init(sender, instance, **kwargs):
-                model_data[instance.pk] = model_instance_to_dict(instance)
+        for subclass in sender.__subclasses__():
+            self.subscribe(subclass, sub)
 
-            @receiver(post_save, sender=base_class)
-            def handle_post_save(sender, instance, created, **kwargs):
-                if created:
-                    old_data = None
-                else:
-                    old_data = model_data[instance.pk]
-                new_data = model_instance_to_dict(instance)
-                self.handle(base_class, old_data, new_data)
-                model_data[instance.pk] = new_data
+        return sub
 
-            @receiver(post_delete, sender=base_class)
-            def handle_post_delete(sender, instance, **kwargs):
-                self.handle(base_class, model_data[instance.pk], None)
-                del model_data[instance.pk]
-
-            self.__post_init_receivers.append(handle_post_init)
-            self.__post_save_receivers.append(handle_post_save)
-            self.__post_delete_receivers.append(handle_post_delete)
-
-        for subclass in base_class.__subclasses__():
-            self.listen(subclass)
-
-    def close(self):
+    def listen(self, base_class=models.Model, sub=None):
         """
-        Close all the Bucket's listeners.
+        Create a subscription to signals from a certain sender and it's
+        subclasses and open it.
+
+        @param sender: Class
+            Sender to subscribe to.
+        @param sub: Bucket.Subscription
+            Existing subscription to extend. If given None the method will
+            create a new subscription object.
+        @return: Bucket.Subscription
+            Subscription object representing the subscribed signals.
         """
-        for r in self.__post_init_receivers:
-            post_init.disconnect(r)
-        self.__post_init_receivers = []
+        sub = self.subscribe(base_class, sub)
+        sub.open()
+        return sub
+        
+    class Subscription:
+        """
+        Represents a subscription between buckets and models. A Subscription
+        object can also be used as a context manager that opens and closes the
+        subscription.
+        """
 
-        for r in self.__post_save_receivers:
-            post_save.disconnect(r)
-        self.__post_save_receivers = []
+        def __init__(self, receivers=set()):
+            """
+            Initialize Subscription.
 
-        for r in self.__post_delete_receivers:
-            post_delete.disconnect(r)
-        self.__post_delete_receivers = []
+            @param receivers: Set[(Signal, Function, Class)]
+                A set of receivers that the subscription contains. A receiver
+                is represented by a three tuple of the signal to receive, the
+                function to handle this signal, and the class to use as sender.
+            """
+            self.connected = False
+            self.__receivers = receivers
+
+        def add(self, signal, handler, sender):
+            """
+            Add a receiver to the subscription.
+
+            @param signal: Signal
+                The signal to receive.
+            @param handler: Function
+                The function that handles the signal.
+            @param sender: Class
+                The class to use as sender.
+            """
+            if (signal, handler, sender) not in self.__receivers:
+                self.__receivers.add((signal, handler, sender))
+                if self.connected:
+                    signal.connect(handler, sender=sender)
+
+        def open(self):
+            """
+            Opens the subscription.
+            """
+            assert not self.connected, 'Connection is already open'
+
+            self.connected = True
+            for signal, handler, sender in self.__receivers:
+                signal.connect(handler, sender=sender)
+
+        def close(self):
+            """
+            Closes the subscription.
+            """
+            assert self.connected, 'Connection is already closed'
+
+            self.connected = False
+            for signal, handler, sender in self.__receivers:
+                signal.disconnect(handler, sender=sender)
+
+        def __enter__(self):
+            """
+            Entry method for using the model as context manager. This method
+            opens the subscription.
+            """
+            return self.open()
+
+        def __exit__(self, type, value, traceback):
+            """
+            Exit method for using the model as context manager. This method
+            closes the subscription.
+
+            @param type: Class
+                Type of the exception thrown or None when exited normally.
+            @param value: Exception
+                The exception thrown or None when exited normally.
+            @param traceback: Traceback
+                The traceback of the exception thrown or None when exited
+                normally.
+            @return: bool
+                Whether to suppress the thrown exception.
+            """
+            self.close()
+            return False
