@@ -3,13 +3,13 @@ from setuptools import setup
 
 
 setup(
-    name='django-buckets',
-    packages=['buckets'],
+    name='django-tally',
+    packages=['django_tally'],
     version='0.1.0',
     description='A package for easily tallying Django data.',
     author='Daan van der Kallen',
     author_email='mail@daanvdk.com',
-    keywords=['django', 'tally', 'buckets'],
+    keywords=['django', 'tally'],
     test_suite='tests',
     classifiers=[
         'Development Status :: 4 - Beta',

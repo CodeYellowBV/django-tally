@@ -1,12 +1,12 @@
 from django.test import TestCase
 from django.db.models import Model
 
-from buckets import Bucket, SumMixin, ProductMixin
+from django_tally import Tally, SumMixin, ProductMixin
 
 from .testapp.models import Foo
 
 
-class ModelCounter(SumMixin, Bucket):
+class ModelCounter(SumMixin, Tally):
     """
     Tallies the amount of models.
     """
@@ -15,7 +15,7 @@ class ModelCounter(SumMixin, Bucket):
         return 1
 
 
-class FooProduct(ProductMixin, Bucket):
+class FooProduct(ProductMixin, Tally):
     """
     Tallies the product of the value attribute of Foo instances.
     """

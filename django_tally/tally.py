@@ -32,10 +32,10 @@ def model_instance_to_dict(instance):
     return res
 
 
-class Bucket(ABC):
+class Tally(ABC):
     """
-    Abstract base class for a Bucket.
-    A bucket is a container that keeps track of a tally and updates this tally
+    Abstract base class for a Tally.
+    A tally is a container that keeps track of a tally and updates this tally
     based on changes happening to model instances.
     """
 
@@ -104,7 +104,7 @@ class Bucket(ABC):
 
     def accept_model(self, model):
         """
-        Determines whether the Bucket accepts updates from the given model.
+        Determines whether the Tally accepts updates from the given model.
 
         @param model: Class
             Model of the updated instance.
@@ -126,7 +126,7 @@ class Bucket(ABC):
 
     def __init__(self):
         """
-        Initialize Bucket.
+        Initialize Tally.
         """
         self.tally = self.get_tally()
         self.__model_data = {}
@@ -217,14 +217,14 @@ class Bucket(ABC):
 
         @param sender: Class
             Sender to subscribe to.
-        @param sub: Bucket.Subscription
+        @param sub: Tally.Subscription
             Existing subscription to extend. If given None the method will
             create a new subscription object.
-        @return: Bucket.Subscription
+        @return: Tally.Subscription
             Subscription object representing the subscribed signals.
         """
         if sub is None:
-            sub = Bucket.Subscription()
+            sub = Tally.Subscription()
 
         if sender is not models.Model and not (
             hasattr(sender, 'Meta') and
@@ -246,10 +246,10 @@ class Bucket(ABC):
 
         @param sender: Class
             Sender to subscribe to.
-        @param sub: Bucket.Subscription
+        @param sub: Tally.Subscription
             Existing subscription to extend. If given None the method will
             create a new subscription object.
-        @return: Bucket.Subscription
+        @return: Tally.Subscription
             Subscription object representing the subscribed signals.
         """
         sub = self.subscribe(base_class, sub)
@@ -258,7 +258,7 @@ class Bucket(ABC):
 
     class Subscription:
         """
-        Represents a subscription between buckets and models. A Subscription
+        Represents a subscription between tallies and models. A Subscription
         object can also be used as a context manager that opens and closes the
         subscription.
         """
