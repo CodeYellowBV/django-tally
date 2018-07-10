@@ -286,17 +286,14 @@ class Tally(ABC):
             @param sender: Class
                 The class to use as sender.
             """
-            if (signal, handler, sender) not in self.__receivers:
-                self.__receivers.add((signal, handler, sender))
-                if self.connected:
-                    signal.connect(handler, sender=sender)
+            assert not self.connected, 'Can only add receiver while closed'
+            self.__receivers.add((signal, handler, sender))
 
         def open(self):
             """
             Opens the subscription.
             """
             assert not self.connected, 'Connection is already open'
-
             self.connected = True
             for signal, handler, sender in self.__receivers:
                 signal.connect(handler, sender=sender)
@@ -306,7 +303,6 @@ class Tally(ABC):
             Closes the subscription.
             """
             assert self.connected, 'Connection is already closed'
-
             self.connected = False
             for signal, handler, sender in self.__receivers:
                 signal.disconnect(handler, sender=sender)
