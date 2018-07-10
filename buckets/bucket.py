@@ -146,7 +146,7 @@ class Bucket(ABC):
             return
 
         assert not (old_data is None and new_data is None), (
-            'old_data and new_data cannot both be None' 
+            'old_data and new_data cannot both be None'
         )
 
         if old_data is None:
@@ -255,7 +255,7 @@ class Bucket(ABC):
         sub = self.subscribe(base_class, sub)
         sub.open()
         return sub
-        
+
     class Subscription:
         """
         Represents a subscription between buckets and models. A Subscription

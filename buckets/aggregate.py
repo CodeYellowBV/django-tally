@@ -47,9 +47,9 @@ class AggregateMixin(ABC):
 
     def handle_event(self, tally, event):
         old_value, new_value = event
-        tally1 = self.aggregate_operator_inverse(tally, old_value)
-        tally2 = self.aggregate_operator(tally1, new_value)
-        return tally2
+        tally = self.aggregate_operator_inverse(tally, old_value)
+        tally = self.aggregate_operator(tally, new_value)
+        return tally
 
 
 class SumMixin(AggregateMixin):
