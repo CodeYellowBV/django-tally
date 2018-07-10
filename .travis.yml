@@ -1,16 +1,16 @@
 sudo: false
 language: python
 python:
-    - "3.5"
-    - "3.6"
+  - "3.5"
+  - "3.6"
 cache:
-    pip: true
+  pip: true
 install:
-    - python3 setup.py install
-    - pip install flake8 codecov coverage
+  - python3 setup.py install
+  - pip install flake8 codecov coverage
 script:
-    - flake8 django_buckets
-    - flake8 tests
-    - coverage run --include="django_buckets/*" setup.py test
+  - flake8 django_buckets
+  - flake8 tests
+  - coverage run --include="django_buckets/*" setup.py test
 after_success:
-    - codecov
+  - codecov
