@@ -146,9 +146,8 @@ class Tally(ABC):
         @param new_data: Mapping
             New data of the model.
         """
-        assert not (old_data is None and new_data is None), (
-            'old_data and new_data cannot both be None'
-        )
+        if new_data == old_data:
+            return
 
         event = self.get_event(model, old_data, new_data)
         if event is None:
