@@ -16,14 +16,16 @@ def model_instance_to_dict(instance):
     """
     res = {}
 
+    print('###############\n' * 5 + 'TO_DICT', instance)
     for field in instance._meta.get_fields():
+        print(field.name, field, field.concrete)
         if not field.concrete or field.many_to_many:
             continue
 
         if isinstance(field, models.ForeignKey):
             value = getattr(instance, field.name + '_id')
         elif isinstance(field, models.FileField):
-            value = str(getattr(instance, field.name))
+            value = getattr(instance, field.name).name
         else:
             value = getattr(instance, field.name)
 
@@ -263,7 +265,7 @@ class Tally(ABC):
         subscription.
         """
 
-        def __init__(self, receivers=set()):
+        def __init__(self, receivers=None):
             """
             Initialize Subscription.
 
@@ -272,6 +274,9 @@ class Tally(ABC):
                 is represented by a three tuple of the signal to receive, the
                 function to handle this signal, and the class to use as sender.
             """
+            if receivers is None:
+                receivers = set()
+
             self.connected = False
             self.__receivers = receivers
 

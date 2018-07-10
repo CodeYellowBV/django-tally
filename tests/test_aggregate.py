@@ -3,7 +3,7 @@ from django.db.models import Model
 
 from django_tally import Tally, SumMixin, ProductMixin
 
-from .testapp.models import Foo
+from .testapp.models import Foo, Bar
 
 
 class ModelCounter(SumMixin, Tally):
@@ -25,6 +25,15 @@ class FooProduct(ProductMixin, Tally):
 
     def get_value(self, model, data):
         return data['value']
+
+
+class ModelCounterWODelete(ModelCounter):
+    """
+    Tallies the amount of models but keeps count of models that were deleted.
+    """
+
+    def handle_delete(self, model, data):
+        return None
 
 
 class ModelCounterTest(TestCase):
@@ -91,6 +100,20 @@ class ModelCounterTest(TestCase):
             foo2.save()
             self.assertEqual(product.tally, 7)
 
+    def test_product_model_filter(self):
+        product = FooProduct()
+        with product.subscribe(Model):
+            # Initial value
+            self.assertEqual(product.tally, 1)
+
+            # Save foo instance
+            Foo(value=5).save()
+            self.assertEqual(product.tally, 5)
+
+            # Save bar instance
+            Bar().save()
+            self.assertEqual(product.tally, 5)
+
     def test_disconnect(self):
         counter = ModelCounter()
         with counter.subscribe(Foo):
@@ -104,3 +127,18 @@ class ModelCounterTest(TestCase):
         # Save a model when counter is closed
         Foo().save()
         self.assertEqual(counter.tally, 1)
+
+    def test_counter_wo_delete(self):
+        counter = ModelCounterWODelete()
+        with counter.subscribe(Foo):
+            # Initial value
+            self.assertEqual(counter.tally, 0)
+
+            # Create model
+            foo = Foo()
+            foo.save()
+            self.assertEqual(counter.tally, 1)
+
+            # Delete model
+            foo.delete()
+            self.assertEqual(counter.tally, 1)
