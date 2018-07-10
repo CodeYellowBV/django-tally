@@ -22,6 +22,7 @@ class FilterMixin(ABC):
         """
         raise NotImplementedError
 
-    def handle(self, model, old_data, new_data):
-        if self.filter(model, old_data, new_data):
-            super().handle(model, old_data, new_data)
+    def handle_change(self, model, old_data, new_data):
+        if not self.filter(model, old_data, new_data):
+            return None
+        return super().handle_change(model, old_data, new_data)

@@ -28,7 +28,7 @@ class GroupMixin(ABC):
     def get_tally(self):
         return defaultdict(super().get_tally)
 
-    def get_event(self, model, old_data, new_data):
+    def handle_change(self, model, old_data, new_data):
         old_group = self.group(model, old_data)
         new_group = self.group(model, new_data)
 
@@ -38,19 +38,19 @@ class GroupMixin(ABC):
             # Change stays inside the same group
             if new_group is not GroupMixin.NoGroup:
                 # Add change event within group
-                subevent = super().get_event(model, old_data, new_data)
+                subevent = super().handle_change(model, old_data, new_data)
                 if subevent is not None:
                     events.append((new_group, subevent))
         else:
             # Changee switches group
             if old_data is not None and old_group is not GroupMixin.NoGroup:
                 # Add delete event for old group
-                subevent = super().get_event(model, old_data, None)
+                subevent = super().handle_change(model, old_data, None)
                 if subevent is not None:
                     events.append((old_group, subevent))
             if new_data is not None and new_group is not GroupMixin.NoGroup:
                 # Add create event for new group
-                subevent = super().get_event(model, None, new_data)
+                subevent = super().handle_change(model, None, new_data)
                 if subevent is not None:
                     events.append((new_group, subevent))
 

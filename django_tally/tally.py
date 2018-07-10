@@ -49,7 +49,6 @@ class Tally(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def handle_create(self, model, data):
         """
         Get event based on creation of model instance.
@@ -63,7 +62,6 @@ class Tally(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def handle_update(self, model, old_data, new_data):
         """
         Get event based on update to model instance.
@@ -79,7 +77,6 @@ class Tally(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def handle_delete(self, model, data):
         """
         Get event based on delete to model instance.
@@ -115,7 +112,7 @@ class Tally(ABC):
         self.tally = self.get_tally()
         self.__model_data = {}
 
-    def get_event(self, model, old_data, new_data):
+    def handle_change(self, model, old_data, new_data):
         """
         Get event based on a change to a model instance.
 
@@ -149,7 +146,7 @@ class Tally(ABC):
         if new_data == old_data:
             return
 
-        event = self.get_event(model, old_data, new_data)
+        event = self.handle_change(model, old_data, new_data)
         if event is None:
             return
 
