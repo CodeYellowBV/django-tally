@@ -9,16 +9,16 @@ class FilterMixin(ABC):
     @abstractmethod
     def filter(self, model, old_data, new_data):
         """
-        Method to filter if a signal should be handled based on the model.
+        Method to filter if a change should be handled based on the model.
 
         @param model: Class
-            Model of the updated instance.
+            Model of the changed instance.
         @param old_data: Mapping
             Old data of the model.
         @param new_data: Mapping
             New data of the model.
         @return: bool
-            Whether the signal should be handled.
+            Whether the change should be handled.
         """
         raise NotImplementedError
 

@@ -96,7 +96,8 @@ class Tally(ABC):
     @abstractmethod
     def handle_event(self, tally, event):
         """
-        Update tally based on event.
+        Update tally based on event. This method takes ownership of the current
+        tally so it is okay to modify and return the instance itself.
 
         @param tally: Any
             The current tally.
@@ -107,23 +108,32 @@ class Tally(ABC):
         """
         raise NotImplementedError
 
-    def update_tally(self, old_tally, new_tally):
-        """
-        Handles updating the tally.
-
-        @param old_tally: Any
-            The current tally.
-        @param new_tally: Any
-            The new updated tally.
-        """
-        self.tally = new_tally
-
     def __init__(self):
         """
         Initialize Tally.
         """
         self.tally = self.get_tally()
         self.__model_data = {}
+
+    def get_event(self, model, old_data, new_data):
+        """
+        Get event based on a change to a model instance.
+
+        @param model: Class
+            Model of the instance that changed.
+        @param old_data: Mapping
+            Old data of the model.
+        @param new_data: Mapping
+            New data of the model.
+        @return: Any
+            Event triggered by the change.
+        """
+        if old_data is None:
+            return self.handle_create(model, new_data)
+        elif new_data is None:
+            return self.handle_delete(model, old_data)
+        else:
+            return self.handle_update(model, old_data, new_data)
 
     def handle(self, model, old_data, new_data):
         """
@@ -140,18 +150,11 @@ class Tally(ABC):
             'old_data and new_data cannot both be None'
         )
 
-        if old_data is None:
-            event = self.handle_create(model, new_data)
-        elif new_data is None:
-            event = self.handle_delete(model, old_data)
-        else:
-            event = self.handle_update(model, old_data, new_data)
-
+        event = self.get_event(model, old_data, new_data)
         if event is None:
             return
 
-        new_tally = self.handle_event(self.tally, event)
-        self.update_tally(self.tally, new_tally)
+        self.tally = self.handle_event(self.tally, event)
 
     def _handle_post_init(self, sender, instance, **kwargs):
         """
