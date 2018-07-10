@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.db.models import Model
 
-from django_tally import Tally, SumMixin, ProductMixin
+from django_tally import Tally, SumMixin, ProductMixin, ModelFilterMixin
 
 from .testapp.models import Foo, Bar
 
@@ -15,12 +15,12 @@ class ModelCounter(SumMixin, Tally):
         return 1
 
 
-class FooProduct(ProductMixin, Tally):
+class FooProduct(ModelFilterMixin, ProductMixin, Tally):
     """
     Tallies the product of the value attribute of Foo instances.
     """
 
-    def accept_model(self, model):
+    def filter_model(self, model):
         return issubclass(model, Foo)
 
     def get_value(self, model, data):

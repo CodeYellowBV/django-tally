@@ -16,9 +16,7 @@ def model_instance_to_dict(instance):
     """
     res = {}
 
-    print('###############\n' * 5 + 'TO_DICT', instance)
     for field in instance._meta.get_fields():
-        print(field.name, field, field.concrete)
         if not field.concrete or field.many_to_many:
             continue
 
@@ -104,17 +102,6 @@ class Tally(ABC):
             The new tally.
         """
 
-    def accept_model(self, model):
-        """
-        Determines whether the Tally accepts updates from the given model.
-
-        @param model: Class
-            Model of the updated instance.
-        @return: bool
-            Indicates if the model is accepted or not.
-        """
-        return True
-
     def update_tally(self, old_tally, new_tally):
         """
         Handles updating the tally.
@@ -144,9 +131,6 @@ class Tally(ABC):
         @param new_data: Mapping
             New data of the model.
         """
-        if not self.accept_model(model):
-            return
-
         assert not (old_data is None and new_data is None), (
             'old_data and new_data cannot both be None'
         )
