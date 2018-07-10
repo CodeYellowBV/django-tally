@@ -47,6 +47,7 @@ class Tally(ABC):
         @return: Any
             Initial value for the tally.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def handle_create(self, model, data):
@@ -60,6 +61,7 @@ class Tally(ABC):
         @return: Any
             Event triggered by the update.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def handle_update(self, model, old_data, new_data):
@@ -75,6 +77,7 @@ class Tally(ABC):
         @return: Any
             Event triggered by the update.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def handle_delete(self, model, data):
@@ -88,6 +91,7 @@ class Tally(ABC):
         @return: Any
             Event triggered by the delete.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def handle_event(self, tally, event):
@@ -101,6 +105,7 @@ class Tally(ABC):
         @return: Any
             The new tally.
         """
+        raise NotImplementedError
 
     def update_tally(self, old_tally, new_tally):
         """

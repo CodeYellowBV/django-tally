@@ -23,6 +23,7 @@ class AggregateMixin(ABC):
         @param data: Mapping
             Data of the model.
         """
+        raise NotImplementedError
 
     def get_tally(self):
         return self.aggregate_identity

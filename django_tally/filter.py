@@ -20,6 +20,7 @@ class FilterMixin(ABC):
         @return: bool
             Whether the signal should be handled.
         """
+        raise NotImplementedError
 
     def handle(self, model, old_data, new_data):
         if self.filter(model, old_data, new_data):
