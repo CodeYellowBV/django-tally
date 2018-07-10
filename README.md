@@ -7,5 +7,5 @@
     https://img.shields.io/codecov/c/github/CodeYellowBV/django-tally.svg
 )](https://codecov.io/gh/CodeYellowBV/django-tally)
 
-Django Tally is a small package to easily keep tallies of data in Django
+Django Tally is a small package to easily maintain tallies of data in Django
 applications.
