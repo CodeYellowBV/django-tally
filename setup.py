@@ -2,6 +2,9 @@
 from setuptools import setup
 
 
+BINDER_TAG = '1.2.0'
+
+
 setup(
     name='django-tally',
     packages=['django_tally'],
@@ -14,7 +17,6 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
@@ -25,6 +27,16 @@ setup(
         'Topic :: Utilities',
     ],
     install_requires=[
-        'Django >= 1.11',
+        'django>=1.11',
+    ],
+    tests_require=[
+        'django-binder>=1',
+    ],
+    extras_require={
+        'app': ['django-binder>=1'],
+    },
+    dependency_links=[
+        'git+http://github.com/CodeYellowBV/django-binder.git'
+        '@{0}#egg=django-binder-{0}'.format(BINDER_TAG),
     ],
 )
