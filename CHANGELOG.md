@@ -2,6 +2,7 @@
 
 ## HEAD
 - Add `Tally` abstract base class.
-- Add `AggregateMixin`, `SumMixin`, and `ProductMixin`.
-- Add `FilterMixin`.
-- Add `GroupMixin`.
+- Add `Aggregate`, `Sum`, and `Product`.
+- Add `Filter`.
+- Add `Group`.
+- Add `CRUD`.
