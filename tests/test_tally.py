@@ -1,144 +1,133 @@
-from django.test import TestCase
-from django.db.models import Model
+from unittest.mock import patch
 
-from django_tally import Tally, SumMixin, ProductMixin, FilterMixin
+from django.db.models import Model
+from django.test import TestCase
+
+from django_tally import Tally
 
 from .testapp.models import Foo, Bar
 
 
-class ModelCounter(SumMixin, Tally):
-    """
-    Tallies the amount of models.
-    """
+class MyTally(Tally):
 
-    def get_value(self, model, data):
-        return 1
-
-
-class FooProduct(FilterMixin, ProductMixin, Tally):
-    """
-    Tallies the product of the value attribute of Foo instances.
-    """
-
-    def filter(self, model, old_data, new_data):
-        return issubclass(model, Foo)
-
-    def get_value(self, model, data):
-        return data['value']
-
-
-class ModelCounterWODelete(ModelCounter):
-    """
-    Tallies the amount of models but keeps count of models that were deleted.
-    """
-
-    def handle_delete(self, model, data):
+    def get_tally(self):
         return None
 
 
-class ModelCounterTest(TestCase):
+tally = MyTally()
 
-    def test_simple_count(self):
-        counter = ModelCounter()
-        sub = counter.listen(Foo)
 
-        # Initial value
-        self.assertEqual(counter.tally, 0)
+@patch.object(tally, 'handle')
+class TallyHandleTest(TestCase):
 
-        # Create two models but do not save yet
-        foo1 = Foo()
-        foo2 = Foo()
-        self.assertEqual(counter.tally, 0)
+    @tally(Foo)
+    def test_subscription(self, handle):
+        # Initial state
+        handle.assert_not_called()
+        # Save model
+        foo = Foo()
+        foo.save()
+        handle.assert_called_once_with(None, foo)
 
-        # Save model 1
-        foo1.save()
-        self.assertEqual(counter.tally, 1)
+    def test_no_subscription(self, handle):
+        # Initial state
+        handle.assert_not_called()
+        # Save model
+        foo = Foo()
+        foo.save()
+        handle.assert_not_called()
 
-        # Save model 2
-        foo2.save()
-        self.assertEqual(counter.tally, 2)
+    def test_closed_subscription(self, handle):
+        # Initial state
+        handle.assert_not_called()
+        # Open subscription and save model
+        foo = Foo()
+        with tally(Foo):
+            foo.save()
+            handle.assert_called_once_with(None, foo)
+        handle.reset_mock()
+        # Save model again
+        foo.save()
+        handle.assert_not_called()
 
-        # Delete model 1
-        foo1.delete()
-        self.assertEqual(counter.tally, 1)
-
-        # Save model 2 without changes
-        foo2.save()
-        self.assertEqual(counter.tally, 1)
+    def test_multisub(self, handle):
+        sub = tally.listen(Foo, Bar)
+        # Initial state
+        handle.assert_not_called()
+        # Save Foo model
+        foo = Foo()
+        foo.save()
+        handle.assert_called_once_with(None, foo)
+        handle.reset_mock()
+        # Save Bar model
+        bar = Bar()
+        bar.save()
+        handle.assert_called_once_with(None, bar)
 
         sub.close()
 
-    def test_product(self):
-        product = FooProduct()
-        with product.subscribe(Model):
+    def test_basesub(self, handle):
+        sub = tally.listen(Model)
+        # Initial state
+        handle.assert_not_called()
+        # Save Foo model
+        foo = Foo()
+        foo.save()
+        handle.assert_called_once_with(None, foo)
+        handle.reset_mock()
+        # Save Bar model
+        bar = Bar()
+        bar.save()
+        handle.assert_called_once_with(None, bar)
+
+        sub.close()
+
+
+class NoEventTally(Tally):
+
+    def __init__(self):
+        super().__init__()
+        self.change_count = 0
+        self.event_count = 0
+
+    def get_tally(self):
+        return 'foo'
+
+    def handle_change(self, old_value, new_value):
+        self.change_count += 1
+        return None
+
+    def handle_event(self, tally, event):
+        self.event_count += 1
+
+
+class NoEventTest(TestCase):
+
+    def test_no_event(self):
+        tally = NoEventTally()
+        with tally(Foo):
             # Initial value
-            self.assertEqual(product.tally, 1)
-
-            # Create two models but do not save yet
-            foo1 = Foo(value=3)
-            foo2 = Foo(value=5)
-            self.assertEqual(product.tally, 1)
-
-            # Save model 1
-            foo1.save()
-            self.assertEqual(product.tally, 3)
-
-            # Save model 2
-            foo2.save()
-            self.assertEqual(product.tally, 15)
-
-            # Delete model 1
-            foo1.delete()
-            self.assertEqual(product.tally, 5)
-
-            # Save model 2 without changes
-            foo2.save()
-            self.assertEqual(product.tally, 5)
-
-            # Save model 2 with changes
-            foo2.value = 7
-            foo2.save()
-            self.assertEqual(product.tally, 7)
-
-    def test_product_model_filter(self):
-        product = FooProduct()
-        with product.subscribe(Model):
-            # Initial value
-            self.assertEqual(product.tally, 1)
-
-            # Save foo instance
-            Foo(value=5).save()
-            self.assertEqual(product.tally, 5)
-
-            # Save bar instance
-            Bar().save()
-            self.assertEqual(product.tally, 5)
-
-    def test_disconnect(self):
-        counter = ModelCounter()
-        with counter.subscribe(Foo):
-            # Initial value
-            self.assertEqual(counter.tally, 0)
-
-            # Save a model
-            Foo().save()
-            self.assertEqual(counter.tally, 1)
-
-        # Save a model when counter is closed
-        Foo().save()
-        self.assertEqual(counter.tally, 1)
-
-    def test_counter_wo_delete(self):
-        counter = ModelCounterWODelete()
-        with counter.subscribe(Foo):
-            # Initial value
-            self.assertEqual(counter.tally, 0)
-
-            # Create model
+            self.assertEqual(tally.change_count, 0)
+            self.assertEqual(tally.event_count, 0)
+            # Save model
             foo = Foo()
             foo.save()
-            self.assertEqual(counter.tally, 1)
-
+            self.assertEqual(tally.change_count, 1)
+            self.assertEqual(tally.event_count, 0)
+            # Save model again
+            foo.save()
+            self.assertEqual(tally.change_count, 2)
+            self.assertEqual(tally.event_count, 0)
             # Delete model
             foo.delete()
-            self.assertEqual(counter.tally, 1)
+            self.assertEqual(tally.change_count, 3)
+            self.assertEqual(tally.event_count, 0)
+
+    def test_reset(self):
+        tally = NoEventTally()
+        # Initial value
+        self.assertEqual(tally.tally, 'foo')
+        # Change and reset
+        tally.tally = 'bar'
+        tally.reset()
+        self.assertEqual(tally.tally, 'foo')

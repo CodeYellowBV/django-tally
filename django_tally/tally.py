@@ -1,45 +1,17 @@
-from abc import ABC, abstractmethod
+from copy import deepcopy
+from collections import defaultdict
 
 from django.db import models
 from django.db.models.signals import post_init, post_save, post_delete
 
 
-def model_instance_to_dict(instance):
+class Tally:
     """
-    Converts a Django model instance to a dict of values for all it's concrete
-    non many to many fields.
-
-    @param instance: Model
-        The model instance to convert.
-    @return: dict
-        The generated dict of values.
-    """
-    res = {}
-
-    for field in instance._meta.get_fields():
-        if not field.concrete or field.many_to_many:
-            continue
-
-        if isinstance(field, models.ForeignKey):
-            value = getattr(instance, field.name + '_id')
-        elif isinstance(field, models.FileField):
-            value = getattr(instance, field.name).name
-        else:
-            value = getattr(instance, field.name)
-
-        res[field.name] = value
-
-    return res
-
-
-class Tally(ABC):
-    """
-    Abstract base class for a Tally.
+    Base class for a Tally.
     A tally is a container that keeps track of a tally and updates this tally
     based on changes happening to model instances.
     """
 
-    @abstractmethod
     def get_tally(self):
         """
         Get initial value for the tally.
@@ -49,48 +21,30 @@ class Tally(ABC):
         """
         raise NotImplementedError
 
-    def handle_create(self, model, data):
+    def get_value(self, instance):
         """
-        Get event based on creation of model instance.
+        Get value of a model instance to be used in changes.
 
-        @param model: Class
-            Model of the updated instance.
-        @param data: Mapping
-            New data of the model.
+        @param model: Any
+            Instance to get the value of.
         @return: Any
-            Event triggered by the update.
+            Value of model instance.
+        """
+        return deepcopy(instance)
+
+    def handle_change(self, old_value, new_value):
+        """
+        Get event based on a change to a model instance.
+
+        @param old_value: Any
+            Old value of the model.
+        @param new_value: Any
+            New value of the model.
+        @return: Any
+            Event triggered by the change.
         """
         raise NotImplementedError
 
-    def handle_update(self, model, old_data, new_data):
-        """
-        Get event based on update to model instance.
-
-        @param model: Class
-            Model of the updated instance.
-        @param old_data: Mapping
-            Old data of the model.
-        @param new_data: Mapping
-            New data of the model.
-        @return: Any
-            Event triggered by the update.
-        """
-        raise NotImplementedError
-
-    def handle_delete(self, model, data):
-        """
-        Get event based on delete to model instance.
-
-        @param model: Class
-            Model of the updated instance.
-        @param data: Mapping
-            Old data of the model.
-        @return: Any
-            Event triggered by the delete.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def handle_event(self, tally, event):
         """
         Update tally based on event. This method takes ownership of the current
@@ -110,43 +64,21 @@ class Tally(ABC):
         Initialize Tally.
         """
         self.tally = self.get_tally()
-        self.__model_data = {}
+        self.__model_data = defaultdict(dict)
 
-    def handle_change(self, model, old_data, new_data):
-        """
-        Get event based on a change to a model instance.
-
-        @param model: Class
-            Model of the instance that changed.
-        @param old_data: Mapping
-            Old data of the model.
-        @param new_data: Mapping
-            New data of the model.
-        @return: Any
-            Event triggered by the change.
-        """
-        if old_data is None:
-            return self.handle_create(model, new_data)
-        elif new_data is None:
-            return self.handle_delete(model, old_data)
-        else:
-            return self.handle_update(model, old_data, new_data)
-
-    def handle(self, model, old_data, new_data):
+    def handle(self, old_value, new_value):
         """
         Handle update to model instance.
 
-        @param model: Class
-            Model of the updated instance.
-        @param old_data: Mapping
-            Old data of the model.
-        @param new_data: Mapping
-            New data of the model.
+        @param old_value: Any
+            Old value of the model.
+        @param new_value: Mapping
+            New value of the model.
         """
-        if new_data == old_data:
+        if old_value is None and new_value is None:
             return
 
-        event = self.handle_change(model, old_data, new_data)
+        event = self.handle_change(old_value, new_value)
         if event is None:
             return
 
@@ -163,7 +95,9 @@ class Tally(ABC):
         @param kwargs: Mapping
             Remaining keyword arguments.
         """
-        self.__model_data[instance.pk] = model_instance_to_dict(instance)
+        self.__model_data[type(instance)][instance.pk] = (
+            self.get_value(instance)
+        )
 
     def _handle_post_save(self, sender, instance, created, **kwargs):
         """
@@ -179,12 +113,12 @@ class Tally(ABC):
             Remaining keyword arguments.
         """
         if created:
-            old_data = None
+            old_value = None
         else:
-            old_data = self.__model_data[instance.pk]
-        new_data = model_instance_to_dict(instance)
-        self.handle(sender, old_data, new_data)
-        self.__model_data[instance.pk] = new_data
+            old_value = self.__model_data[type(instance)][instance.pk]
+        new_value = self.get_value(instance)
+        self.handle(old_value, new_value)
+        self.__model_data[type(instance)][instance.pk] = new_value
 
     def _handle_post_delete(self, sender, instance, **kwargs):
         """
@@ -197,16 +131,16 @@ class Tally(ABC):
         @param kwargs: Mapping
             Remaining keyword arguments.
         """
-        self.handle(sender, self.__model_data[instance.pk], None)
-        del self.__model_data[instance.pk]
+        self.handle(self.__model_data[type(instance)][instance.pk], None)
+        del self.__model_data[type(instance)][instance.pk]
 
-    def subscribe(self, sender=models.Model, sub=None):
+    def __call__(self, *senders, sub=None):
         """
-        Create a subscription to signals from a certain sender and it's
+        Create a subscription to signals from certain senders and their
         subclasses.
 
-        @param sender: Class
-            Sender to subscribe to.
+        @param *senders: Class[]
+            Senders to subscribe to.
         @param sub: Tally.Subscription
             Existing subscription to extend. If given None the method will
             create a new subscription object.
@@ -216,35 +150,42 @@ class Tally(ABC):
         if sub is None:
             sub = Tally.Subscription()
 
-        if sender is not models.Model and not (
-            hasattr(sender, 'Meta') and
-            getattr(sender.Meta, 'abstract', False)
-        ):
-            sub.add(post_init, self._handle_post_init, sender)
-            sub.add(post_save, self._handle_post_save, sender)
-            sub.add(post_delete, self._handle_post_delete, sender)
+        for sender in senders:
+            if sender is not models.Model and not (
+                hasattr(sender, 'Meta') and
+                getattr(sender.Meta, 'abstract', False)
+            ):
+                sub.add(post_init, self._handle_post_init, sender)
+                sub.add(post_save, self._handle_post_save, sender)
+                sub.add(post_delete, self._handle_post_delete, sender)
 
-        for subclass in sender.__subclasses__():
-            self.subscribe(subclass, sub)
+            for subclass in sender.__subclasses__():
+                self(subclass, sub=sub)
 
         return sub
 
-    def listen(self, base_class=models.Model, sub=None):
+    def listen(self, *senders, sub=None):
         """
-        Create a subscription to signals from a certain sender and it's
+        Create a subscription to signals from certain senders and their
         subclasses and open it.
 
-        @param sender: Class
-            Sender to subscribe to.
+        @param *senders: Class[]
+            Senders to subscribe to.
         @param sub: Tally.Subscription
             Existing subscription to extend. If given None the method will
             create a new subscription object.
         @return: Tally.Subscription
             Subscription object representing the subscribed signals.
         """
-        sub = self.subscribe(base_class, sub)
+        sub = self(*senders, sub=sub)
         sub.open()
         return sub
+
+    def reset(self):
+        """
+        Resets the tally to it's original value.
+        """
+        self.tally = self.get_tally()
 
     class Subscription:
         """
@@ -324,3 +265,18 @@ class Tally(ABC):
             """
             self.close()
             return False
+
+        def __call__(self, func):
+            """
+            Wraps the given function to open this subscription right before it
+            is called and close right after the call is done.
+
+            @param func: Function
+                The function to wrap.
+            @return:
+                The wrapped version of the function.
+            """
+            def res(*args, **kwargs):
+                with self:
+                    return func(*args, **kwargs)
+            return res

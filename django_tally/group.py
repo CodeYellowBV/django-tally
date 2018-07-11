@@ -1,8 +1,7 @@
-from abc import ABC, abstractmethod
 from collections import defaultdict
 
 
-class GroupMixin(ABC):
+class Group:
     """
     Mixin that allows for keeping seperate tallies for certain groups based on
     the change that was made.
@@ -10,47 +9,60 @@ class GroupMixin(ABC):
     as a delete on the old group and as a create on the new group.
     """
 
-    @abstractmethod
-    def group(self, model, data):
+    def get_group(self, value):
         """
-        Method to determine to which group a change belongs. If the signal does
-        not belong to any group you can return GroupMixin.NoGroup
+        Method to determine to which group a value belongs. A return value of
+        None is assumed to mean that the value does not belong to any group.
 
-        @param model: Class
-            Model of the changed instance.
-        @param data: Mapping
-            Data of the model.
+        @param value: Any
+            Value of the model.
         @return: Any
-            The group of the change.
+            The group of the value.
         """
-        raise NotImplementedError
+        if value is None:
+            return None
+        return self.get_group_no_none(value)
+
+    def get_group_no_none(self, value):
+        """
+        Method to determine to which group a value belongs. A return value of
+        None is assumed to mean that the value does not belong to any group.
+        This differs from the get_group method in that value is guaranteed to
+        not be None.
+
+        @param value: Any
+            Value of the model, guaranteed to not be None.
+        @return: Any
+            The group of the value.
+        """
+        return value
 
     def get_tally(self):
         return defaultdict(super().get_tally)
 
-    def handle_change(self, model, old_data, new_data):
-        old_group = self.group(model, old_data)
-        new_group = self.group(model, new_data)
+    def handle_change(self, old_value, new_value):
+        old_group = self.get_group(old_value)
+        new_group = self.get_group(new_value)
 
         # Construct a list of (group, subevent) tuples
         events = []
         if old_group == new_group:
             # Change stays inside the same group
-            if new_group is not GroupMixin.NoGroup:
+            if new_group is not None:
                 # Add change event within group
-                subevent = super().handle_change(model, old_data, new_data)
+                subevent = super().handle_change(old_value, new_value)
                 if subevent is not None:
                     events.append((new_group, subevent))
         else:
-            # Changee switches group
-            if old_data is not None and old_group is not GroupMixin.NoGroup:
+            # Change switches group
+            if old_value is not None and old_group is not None:
                 # Add delete event for old group
-                subevent = super().handle_change(model, old_data, None)
+                subevent = super().handle_change(old_value, None)
                 if subevent is not None:
                     events.append((old_group, subevent))
-            if new_data is not None and new_group is not GroupMixin.NoGroup:
+            if new_value is not None and new_group is not None:
                 # Add create event for new group
-                subevent = super().handle_change(model, None, new_data)
+                subevent = super().handle_change(None, new_value)
                 if subevent is not None:
                     events.append((new_group, subevent))
 
@@ -60,6 +72,3 @@ class GroupMixin(ABC):
         for group, subevent in event:
             tally[group] = super().handle_event(tally[group], subevent)
         return tally
-
-    class NoGroup:
-        pass

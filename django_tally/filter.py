@@ -1,28 +1,22 @@
-from abc import ABC, abstractmethod
-
-
-class FilterMixin(ABC):
+class Filter:
     """
-    A mixin to filter signals on Tallies.
+    A mixin to filter which values are included on tallies.
     """
 
-    @abstractmethod
-    def filter(self, model, old_data, new_data):
+    def filter_value(self, value):
         """
-        Method to filter if a change should be handled based on the model.
+        Method to filter if a value should be included.
 
-        @param model: Class
-            Model of the changed instance.
-        @param old_data: Mapping
-            Old data of the model.
-        @param new_data: Mapping
-            New data of the model.
+        @param new_value: Any
+            Value of the model.
         @return: bool
-            Whether the change should be handled.
+            Whether the value should be included.
         """
         raise NotImplementedError
 
-    def handle_change(self, model, old_data, new_data):
-        if not self.filter(model, old_data, new_data):
-            return None
-        return super().handle_change(model, old_data, new_data)
+    def handle(self, old_value, new_value):
+        if old_value is not None and not self.filter_value(old_value):
+            old_value = None
+        if new_value is not None and not self.filter_value(new_value):
+            new_value = None
+        return super().handle(old_value, new_value)

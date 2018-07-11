@@ -1,75 +1,90 @@
-from abc import ABC, abstractmethod
 import operator
 
 
-class AggregateMixin(ABC):
+class Aggregate:
     """
     Mixin that given an identity, operator, inverse_operator, and a method
-    implementation to gather a value based on a model instance keeps a tally
-    for this aggregate.
+    implementation to gather a value based on a model instance value that keeps
+    a tally for this aggregate.
     """
 
-    aggregate_operator = None
-    aggregate_operator_inverse = None
-    aggregate_identity = None
+    # The identity of the aggregation operation
+    aggregate_id = None
 
-    @abstractmethod
-    def get_value(self, model, data):
+    def aggregate_add(self, aggregate, value):
         """
-        Get value for the aggregate based on a model instance.
+        Add a value to the aggregate.
 
-        @param model: Class
-            Model of the updated instance.
-        @param data: Mapping
-            Data of the model.
+        @param aggregate: Any
+            The current aggregate.
+        @param value: Any
+            The value to add.
+        @return: Any
+            The aggregate after the value was added.
         """
         raise NotImplementedError
 
+    def aggregate_sub(self, aggregate, value):
+        """
+        Subtract a value from the aggregate.
+
+        @param aggregate: Any
+            The current aggregate.
+        @param value: Any
+            The value to subtract.
+        @return: Any
+            The aggregate after the value was removed.
+        """
+        raise NotImplementedError
+
+    def aggregate_transform(self, value):
+        """
+        Transforms the value before it is added to or removed from the
+        aggregate.
+
+        @param value: Any
+           The value to transform.
+        @return: Any
+            The transformed value.
+        """
+        return value
+
     def get_tally(self):
-        return self.aggregate_identity
+        return self.aggregate_id
 
-    def handle_create(self, model, data):
+    def handle_change(self, old_value, new_value):
         return (
-            self.aggregate_identity,
-            self.get_value(model, data),
-        )
+            self.aggregate_id
+            if old_value is None else
+            self.aggregate_transform(old_value),
 
-    def handle_update(self, model, old_data, new_data):
-        return (
-            self.get_value(model, old_data),
-            self.get_value(model, new_data),
-        )
-
-    def handle_delete(self, model, data):
-        return (
-            self.get_value(model, data),
-            self.aggregate_identity,
+            self.aggregate_id
+            if new_value is None else
+            self.aggregate_transform(new_value),
         )
 
     def handle_event(self, tally, event):
         old_value, new_value = event
-        tally = self.aggregate_operator_inverse(tally, old_value)
-        tally = self.aggregate_operator(tally, new_value)
+        tally = self.aggregate_sub(tally, old_value)
+        tally = self.aggregate_add(tally, new_value)
         return tally
 
 
-class SumMixin(AggregateMixin):
+class Sum(Aggregate):
     """
-    Subclass of AggregateMixin that provides the right operator, inverse
-    operator, and identity for a sum aggregate.
+    Subclass of AggregateMixin that provides the right operations and identity
+    for a sum aggregate.
     """
+    aggregate_id = 0
+    aggregate_add = operator.add
+    aggregate_sub = operator.sub
 
-    aggregate_operator = operator.add
-    aggregate_operator_inverse = operator.sub
-    aggregate_identity = 0
 
-
-class ProductMixin(AggregateMixin):
+class Product(Aggregate):
     """
-    Subclass of AggregateMixin that provides the right operator, inverse
-    operator, and identity for a product aggregate.
+    Subclass of AggregateMixin that provides the right operations and identity
+    for a product aggregate.
     """
-
-    aggregate_operator = operator.mul
-    aggregate_operator_inverse = operator.truediv
-    aggregate_identity = 1
+    aggregate_id = 1
+    aggregate_add = operator.mul
+    aggregate_sub = operator.truediv
