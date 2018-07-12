@@ -2,9 +2,6 @@
 from setuptools import setup
 
 
-BINDER_TAG = '1.2.0'
-
-
 setup(
     name='django-tally',
     packages=['django_tally'],
