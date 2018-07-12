@@ -6,3 +6,4 @@
 - Add `Filter`.
 - Add `Group`.
 - Add `CRUD`.
+- Add `db.DBStored`.

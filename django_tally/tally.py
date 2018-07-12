@@ -59,11 +59,20 @@ class Tally:
         """
         raise NotImplementedError
 
-    def __init__(self):
+    def __init__(self, *args):
         """
         Initialize Tally.
         """
-        self.tally = self.get_tally()
+        if len(args) > 1:
+            raise TypeError(
+                '{}.__init__() takes at most 1 argument ({} given)'
+                .format(type(self).__name__, args)
+            )
+        elif len(args) == 1:
+            self.tally = args[0]
+        else:
+            self.tally = self.get_tally()
+
         self.__model_data = defaultdict(dict)
 
     def handle(self, old_value, new_value):

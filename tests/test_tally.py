@@ -85,8 +85,8 @@ class TallyHandleTest(TestCase):
 
 class NoEventTally(Tally):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.change_count = 0
         self.event_count = 0
 
@@ -123,6 +123,9 @@ class NoEventTest(TestCase):
             self.assertEqual(tally.change_count, 3)
             self.assertEqual(tally.event_count, 0)
 
+
+class TallyBasicsTest(TestCase):
+
     def test_reset(self):
         tally = NoEventTally()
         # Initial value
@@ -131,3 +134,9 @@ class NoEventTest(TestCase):
         tally.tally = 'bar'
         tally.reset()
         self.assertEqual(tally.tally, 'foo')
+
+    def test_multiple_value_init(self):
+        NoEventTally()
+        NoEventTally('foo')
+        with self.assertRaises(TypeError):
+            NoEventTally('foo', 'bar')

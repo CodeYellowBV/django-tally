@@ -29,14 +29,4 @@ setup(
     install_requires=[
         'django>=1.11',
     ],
-    tests_require=[
-        'django-binder>=1',
-    ],
-    extras_require={
-        'app': ['django-binder>=1'],
-    },
-    dependency_links=[
-        'git+http://github.com/CodeYellowBV/django-binder.git'
-        '@{0}#egg=django-binder-{0}'.format(BINDER_TAG),
-    ],
 )
