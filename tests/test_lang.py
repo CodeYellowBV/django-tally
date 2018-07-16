@@ -319,7 +319,6 @@ class TestLang(TestCase):
 
     def test_do(self):
         self.runExpr([KW('do'), 1, 2], 2)
-        self.runExprFail([KW('do')], TypeError)
 
     def test_if(self):
         self.runExprFail([KW('if')], TypeError)

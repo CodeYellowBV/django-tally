@@ -367,14 +367,10 @@ def lang_not(args, env):
 
 @register('do')
 def lang_do(args, env):
-    if not args:
-        raise TypeError(
-            'expected at least 1 argument, got {}'
-            .format(len(args))
-        )
-    for arg in args[:-1]:
-        run(arg, env)
-    return run(args[-1], env)
+    res = None
+    for arg in args:
+        res = run(arg, env)
+    return res
 
 
 @register('if')
