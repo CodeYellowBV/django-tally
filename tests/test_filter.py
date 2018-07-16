@@ -5,7 +5,7 @@ from django_tally import Tally, Filter, Sum
 from .testapp.models import Foo, Bar
 
 
-class FooCounter(Sum, Filter, Tally):
+class FooCounter(Filter, Sum, Tally):
 
     def filter_value(self, value):
         return isinstance(value, Foo)

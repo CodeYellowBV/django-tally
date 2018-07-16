@@ -54,51 +54,38 @@ class DBStored:
     def __init__(self):
         super().__init__(None)
 
-    def handle_change(self, old_value, new_value):
+    def handle_change(self, tally, old_value, new_value):
         old_db_name = self.get_db_name(old_value)
         new_db_name = self.get_db_name(new_value)
 
-        # Construct a list of (db_name, subevent) tuples
-        events = []
         if old_db_name == new_db_name:
             # Change stays inside the same db_name
             if new_db_name is not None:
                 # Add change event within db_name
-                subevent = super().handle_change(old_value, new_value)
-                if subevent is not None:
-                    events.append((new_db_name, subevent))
+                self._update_data(new_db_name, old_value, new_value)
         else:
             # Change switches db_name
             if old_value is not None and old_db_name is not None:
                 # Add delete event for old db_name
-                subevent = super().handle_change(old_value, None)
-                if subevent is not None:
-                    events.append((old_db_name, subevent))
+                self._update_data(old_db_name, old_value, None)
             if new_value is not None and new_db_name is not None:
                 # Add create event for new db_name
-                subevent = super().handle_change(None, new_value)
-                if subevent is not None:
-                    events.append((new_db_name, subevent))
-
-        return events
-
-    def handle_event(self, tally, event):
-        if event:
-            from .models import Data
-
-            with transaction.atomic():
-                for db_name, subevent in event:
-                    try:
-                        data = Data.objects.get(name=db_name)
-                    except Data.DoesNotExist:
-                        data = Data(name=db_name)
-                        subtally = self.get_tally()
-                    else:
-                        subtally = self.from_db(data.value)
-
-                    subtally = super().handle_event(subtally, subevent)
-
-                    data.value = self.to_db(subtally)
-                    data.save()
+                self._update_data(new_db_name, None, new_value)
 
         return tally
+
+    def _update_data(self, db_name, old_value, new_value):
+        from .models import Data
+        with transaction.atomic():
+            try:
+                data = Data.objects.get(name=db_name)
+            except Data.DoesNotExist:
+                data = Data(name=db_name)
+                tally = self.get_tally()
+            else:
+                tally = self.from_db(data.value)
+
+            tally = super().handle_change(tally, old_value, new_value)
+
+            data.value = self.to_db(tally)
+            data.save()

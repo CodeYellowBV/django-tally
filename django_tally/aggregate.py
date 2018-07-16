@@ -52,21 +52,20 @@ class Aggregate:
     def get_tally(self):
         return self.aggregate_id
 
-    def handle_change(self, old_value, new_value):
-        return (
-            self.aggregate_id
-            if old_value is None else
-            self.aggregate_transform(old_value),
+    def handle_change(self, tally, old_value, new_value):
+        if old_value is None:
+            old_value = self.aggregate_id
+        else:
+            old_value = self.aggregate_transform(old_value)
 
-            self.aggregate_id
-            if new_value is None else
-            self.aggregate_transform(new_value),
-        )
+        if new_value is None:
+            new_value = self.aggregate_id
+        else:
+            new_value = self.aggregate_transform(new_value)
 
-    def handle_event(self, tally, event):
-        old_value, new_value = event
         tally = self.aggregate_sub(tally, old_value)
         tally = self.aggregate_add(tally, new_value)
+
         return tally
 
 

@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from django.db.models import Model
 from django.test import TestCase
@@ -17,7 +17,7 @@ class MyTally(Tally):
 tally = MyTally()
 
 
-@patch.object(tally, 'handle')
+@patch.object(tally, '_handle')
 class TallyHandleTest(TestCase):
 
     @tally(Foo)
@@ -83,51 +83,19 @@ class TallyHandleTest(TestCase):
         sub.close()
 
 
-class NoEventTally(Tally):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.change_count = 0
-        self.event_count = 0
+class FooTally(Tally):
 
     def get_tally(self):
         return 'foo'
 
-    def handle_change(self, old_value, new_value):
-        self.change_count += 1
-        return None
-
-    def handle_event(self, tally, event):
-        self.event_count += 1
-
-
-class NoEventTest(TestCase):
-
-    def test_no_event(self):
-        tally = NoEventTally()
-        with tally(Foo):
-            # Initial value
-            self.assertEqual(tally.change_count, 0)
-            self.assertEqual(tally.event_count, 0)
-            # Save model
-            foo = Foo()
-            foo.save()
-            self.assertEqual(tally.change_count, 1)
-            self.assertEqual(tally.event_count, 0)
-            # Save model again
-            foo.save()
-            self.assertEqual(tally.change_count, 2)
-            self.assertEqual(tally.event_count, 0)
-            # Delete model
-            foo.delete()
-            self.assertEqual(tally.change_count, 3)
-            self.assertEqual(tally.event_count, 0)
+    def handle_change(self, tally, old_value, new_value):
+        return tally
 
 
 class TallyBasicsTest(TestCase):
 
     def test_reset(self):
-        tally = NoEventTally()
+        tally = FooTally()
         # Initial value
         self.assertEqual(tally.tally, 'foo')
         # Change and reset
@@ -136,7 +104,26 @@ class TallyBasicsTest(TestCase):
         self.assertEqual(tally.tally, 'foo')
 
     def test_multiple_value_init(self):
-        NoEventTally()
-        NoEventTally('foo')
+        FooTally()
+        FooTally('foo')
         with self.assertRaises(TypeError):
-            NoEventTally('foo', 'bar')
+            FooTally('foo', 'bar')
+
+    def test_handle_change_calls(self):
+        tally = FooTally()
+        tally.handle_change = Mock()
+
+        # Initial value
+        self.assertEqual(tally.handle_change.call_count, 0)
+        # Two values
+        tally._handle('foo', 'bar')
+        self.assertEqual(tally.handle_change.call_count, 1)
+        # Only new value
+        tally._handle('foo', None)
+        self.assertEqual(tally.handle_change.call_count, 2)
+        # Only old value
+        tally._handle(None, 'bar')
+        self.assertEqual(tally.handle_change.call_count, 3)
+        # Only old value
+        tally._handle(None, None)
+        self.assertEqual(tally.handle_change.call_count, 3)

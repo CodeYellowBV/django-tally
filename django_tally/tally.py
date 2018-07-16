@@ -32,30 +32,18 @@ class Tally:
         """
         return deepcopy(instance)
 
-    def handle_change(self, old_value, new_value):
+    def handle_change(self, tally, old_value, new_value):
         """
-        Get event based on a change to a model instance.
+        Change tally based on a change to a model instance.
 
+        @param tally: Any
+            Current value of the tally.
         @param old_value: Any
             Old value of the model.
         @param new_value: Any
             New value of the model.
         @return: Any
-            Event triggered by the change.
-        """
-        raise NotImplementedError
-
-    def handle_event(self, tally, event):
-        """
-        Update tally based on event. This method takes ownership of the current
-        tally so it is okay to modify and return the instance itself.
-
-        @param tally: Any
-            The current tally.
-        @param event: Any
-            Event triggered.
-        @return: Any
-            The new tally.
+            New tally value.
         """
         raise NotImplementedError
 
@@ -75,7 +63,7 @@ class Tally:
 
         self.__model_data = defaultdict(dict)
 
-    def handle(self, old_value, new_value):
+    def _handle(self, old_value, new_value):
         """
         Handle update to model instance.
 
@@ -87,11 +75,7 @@ class Tally:
         if old_value is None and new_value is None:
             return
 
-        event = self.handle_change(old_value, new_value)
-        if event is None:
-            return
-
-        self.tally = self.handle_event(self.tally, event)
+        self.tally = self.handle_change(self.tally, old_value, new_value)
 
     def _handle_post_init(self, sender, instance, **kwargs):
         """
@@ -126,7 +110,7 @@ class Tally:
         else:
             old_value = self.__model_data[type(instance)][instance.pk]
         new_value = self.get_value(instance)
-        self.handle(old_value, new_value)
+        self._handle(old_value, new_value)
         self.__model_data[type(instance)][instance.pk] = new_value
 
     def _handle_post_delete(self, sender, instance, **kwargs):
@@ -140,7 +124,7 @@ class Tally:
         @param kwargs: Mapping
             Remaining keyword arguments.
         """
-        self.handle(self.__model_data[type(instance)][instance.pk], None)
+        self._handle(self.__model_data[type(instance)][instance.pk], None)
         del self.__model_data[type(instance)][instance.pk]
 
     def __call__(self, *senders, sub=None):

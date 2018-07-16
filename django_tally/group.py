@@ -40,35 +40,28 @@ class Group:
     def get_tally(self):
         return defaultdict(super().get_tally)
 
-    def handle_change(self, old_value, new_value):
+    def handle_change(self, tally, old_value, new_value):
         old_group = self.get_group(old_value)
         new_group = self.get_group(new_value)
 
-        # Construct a list of (group, subevent) tuples
-        events = []
         if old_group == new_group:
             # Change stays inside the same group
             if new_group is not None:
                 # Add change event within group
-                subevent = super().handle_change(old_value, new_value)
-                if subevent is not None:
-                    events.append((new_group, subevent))
+                tally[new_group] = super().handle_change(
+                    tally[new_group], old_value, new_value
+                )
         else:
             # Change switches group
             if old_value is not None and old_group is not None:
                 # Add delete event for old group
-                subevent = super().handle_change(old_value, None)
-                if subevent is not None:
-                    events.append((old_group, subevent))
+                tally[old_group] = super().handle_change(
+                    tally[old_group], old_value, None
+                )
             if new_value is not None and new_group is not None:
                 # Add create event for new group
-                subevent = super().handle_change(None, new_value)
-                if subevent is not None:
-                    events.append((new_group, subevent))
+                tally[new_group] = super().handle_change(
+                    tally[new_group], None, new_value
+                )
 
-        return events
-
-    def handle_event(self, tally, event):
-        for group, subevent in event:
-            tally[group] = super().handle_event(tally[group], subevent)
         return tally
