@@ -5,6 +5,9 @@ stdenv = {}
 
 
 class Env(MutableMapping):
+    """
+    An environment in the language.
+    """
 
     def __init__(self, *args, base_env=stdenv, **kwargs):
         self.__dict = dict(*args, **kwargs)
@@ -77,7 +80,7 @@ class KW:
 
 class Func:
     """
-    A function as value for the language.
+    A function in the language.
     """
 
     def __init__(self, params, body, env, name='<anonymous>'):
