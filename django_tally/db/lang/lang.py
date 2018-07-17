@@ -544,65 +544,57 @@ def lang_split(args, env):
 
 @register('null?')
 def lang_null_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return run(args[0], env) is None
+    return all(run(arg, env) is None for arg in args)
 
 
 @register('int?')
 def lang_int_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return isinstance(run(args[0], env), int)
+    return all(isinstance(run(arg, env), int) for arg in args)
 
 
 @register('float?')
 def lang_float_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return isinstance(run(args[0], env), float)
+    return all(isinstance(run(arg, env), float) for arg in args)
 
 
 @register('bool?')
 def lang_bool_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return isinstance(run(args[0], env), bool)
+    return all(isinstance(run(arg, env), bool) for arg in args)
 
 
 @register('str?')
 def lang_str_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return isinstance(run(args[0], env), str)
+    return all(isinstance(run(arg, env), str) for arg in args)
 
 
 @register('list?')
 def lang_list_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return isinstance(run(args[0], env), list)
+    return all(isinstance(run(arg, env), list) for arg in args)
 
 
 @register('dict?')
 def lang_dict_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return isinstance(run(args[0], env), dict)
+    return all(isinstance(run(arg, env), dict) for arg in args)
 
 
 @register('tuple?')
 def lang_tuple_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return isinstance(run(args[0], env), tuple)
+    return all(isinstance(run(arg, env), tuple) for arg in args)
 
 
 @register('set?')
 def lang_set_check(args, env):
-    if len(args) != 1:
-        raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return isinstance(run(args[0], env), set)
+    return all(isinstance(run(arg, env), set) for arg in args)
+
+
+@register('kw?')
+def lang_kw_check(args, env):
+    return all(isinstance(run(arg, env), KW) for arg in args)
+
+
+@register('func?')
+def lang_func_check(args, env):
+    return all(isinstance(run(arg, env), Func) for arg in args)
 
 
 @register('not-null?')
@@ -648,6 +640,16 @@ def lang_not_tuple_check(args, env):
 @register('not-set?')
 def lang_not_set_check(args, env):
     return not lang_set_check(args, env)
+
+
+@register('not-kw?')
+def lang_not_kw_check(args, env):
+    return not lang_kw_check(args, env)
+
+
+@register('not-func?')
+def lang_not_func_check(args, env):
+    return not lang_func_check(args, env)
 
 
 @register('->')

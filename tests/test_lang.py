@@ -434,6 +434,57 @@ class TestLang(TestCase):
         self.runExpr([KW('split'), 'foo,bar,baz', ','], ['foo', 'bar', 'baz'])
         self.runExprFail([KW('split')], TypeError)
 
+    def test_call_dict(self):
+        self.runExpr([[KW('dict'), 'foo', 1, 'bar', 2], 'foo'], 1)
+
+    def test_typechecks(self):
+        type_checks = {
+            'null?': lambda x: x is None,
+            'not-null?': lambda x: x is not None,
+            'int?': lambda x: isinstance(x, int),
+            'not-int?': lambda x: not isinstance(x, int),
+            'float?': lambda x: isinstance(x, float),
+            'not-float?': lambda x: not isinstance(x, float),
+            'bool?': lambda x: isinstance(x, bool),
+            'not-bool?': lambda x: not isinstance(x, bool),
+            'str?': lambda x: isinstance(x, str),
+            'not-str?': lambda x: not isinstance(x, str),
+            'list?': lambda x: isinstance(x, list),
+            'not-list?': lambda x: not isinstance(x, list),
+            'dict?': lambda x: isinstance(x, dict),
+            'not-dict?': lambda x: not isinstance(x, dict),
+            'tuple?': lambda x: isinstance(x, tuple),
+            'not-tuple?': lambda x: not isinstance(x, tuple),
+            'set?': lambda x: isinstance(x, set),
+            'not-set?': lambda x: not isinstance(x, set),
+            'kw?': lambda x: isinstance(x, KW),
+            'not-kw?': lambda x: not isinstance(x, KW),
+            'func?': lambda x: isinstance(x, Func),
+            'not-func?': lambda x: not isinstance(x, Func),
+        }
+        values = [
+            None, KW('foo'), 'foo', 1, 1.5, {'foo': 1}, ['bar'],
+            ('foo', 'bar'), {'foo', 'bar', 'baz'},
+            Func(['foo'], KW('foo'), self.env),
+        ]
+        for name, type_check in type_checks.items():
+            with self.subTest(name):
+                for value in values:
+                    self.runExpr(
+                        [KW(name), [KW('quote'), value]],
+                        type_check(value),
+                    )
+
+    def test_thread(self):
+        self.runExpr([
+            KW('->'), 10,
+            [KW('-'), 2],
+            [KW('*'), 3],
+            [KW('/'), 4],
+        ], 6)
+        self.runExprFail([KW('->')], TypeError)
+        self.runExprFail([KW('->'), 'foo', 'bar'], TypeError)
+
     # helper methods
     def setUp(self):
         self.env = Env()
