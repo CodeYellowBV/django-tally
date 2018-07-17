@@ -3,8 +3,7 @@ from django.db import models
 from ..db_stored import DBStored
 from ...group import Group
 from .user_def_tally_base import UserDefTallyBaseNonStored
-from ..lang import run, Env, json
-from ...tally import Tally
+from ..lang import json
 
 
 class UserDefGroupTallyBaseNonStored(Group, UserDefTallyBaseNonStored):

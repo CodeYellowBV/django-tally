@@ -29,7 +29,7 @@ class TestSimpleCounter(TestCase):
         ]
         self.counter.get_tally_body = 0
         self.counter.handle_change_body = [
-            KW('->'), KW('tally'), 
+            KW('->'), KW('tally'),
             [KW('-'), [KW('transform'), KW('old_value')]],
             [KW('+'), [KW('transform'), KW('new_value')]],
         ]

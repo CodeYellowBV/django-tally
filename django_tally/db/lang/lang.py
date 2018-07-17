@@ -111,19 +111,6 @@ class Func:
             raise exc
 
 
-def debug(runner):
-    depth = 0
-    def debug_runner(body, env=None):
-        nonlocal depth
-        print('  ' * depth + '->', repr(body))
-        depth += 1
-        res = runner(body, env)
-        depth -= 1
-        print('  ' * depth + '<-', repr(res))
-        return res
-    return debug_runner
-
-
 def run(body, env=None):
     """
     Run a body of code.

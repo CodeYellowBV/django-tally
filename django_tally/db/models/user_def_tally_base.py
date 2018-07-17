@@ -2,7 +2,6 @@ from django.db import models
 
 from ..db_stored import DBStored
 from ...tally import Tally
-from ...filter import Filter
 
 from ..lang import run, Env, json, KW
 
