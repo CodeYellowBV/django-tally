@@ -2,6 +2,7 @@ from django.db import models
 
 from ..db_stored import DBStored
 from ...tally import Tally
+from ...filter import Filter
 
 from ..lang import run, Env, json, KW
 
@@ -20,13 +21,12 @@ def instance_to_dict(instance):
     return res
 
 
-class UserDefTallyBaseNonStored(Tally, models.Model):
+class UserDefTallyBaseNonFiltered(Tally, models.Model):
 
     _base = models.BinaryField(default=b'null')
     _get_tally_body = models.BinaryField()
     _get_value_body = models.BinaryField(default=b'"k:instance"')
     _handle_change_body = models.BinaryField()
-    _filter_value_body = models.BinaryField(default=b'true')
 
     def __init__(self, *args, **kwargs):
         super(Tally, self).__init__(*args, **kwargs)
@@ -35,7 +35,6 @@ class UserDefTallyBaseNonStored(Tally, models.Model):
         self._decoded_get_tally_body = None
         self._decoded_get_value_body = None
         self._decoded_handle_change_body = None
-        self._decoded_filter_value_body = None
 
     @property
     def base(self):
@@ -88,26 +87,12 @@ class UserDefTallyBaseNonStored(Tally, models.Model):
         self._decoded_handle_change_body = value
         self._handle_change_body = json.dumps(value).encode()
 
-    @property
-    def filter_value_body(self):
-        if self._decoded_filter_value_body is None:
-            self._decoded_filter_value_body = json.loads(
-                self._filter_value_body.decode()
-            )
-        return self._decoded_filter_value_body
-
-    @filter_value_body.setter
-    def filter_value_body(self, value):
-        self._decoded_filter_value_body = value
-        self._filter_value_body = json.dumps(value).encode()
-
     def refresh_from_db(self, *args, **kwargs):
         self._env = None
         self._decoded_base = None
         self._decoded_get_tally_body = None
         self._decoded_get_value_body = None
         self._decoded_handle_change_body = None
-        self._decoded_filter_value_body = None
         return super().refresh_from_db()
 
     def get_tally(self):
@@ -137,12 +122,44 @@ class UserDefTallyBaseNonStored(Tally, models.Model):
         abstract = True
 
 
+class UserDefTallyBaseNonStored(Filter, UserDefTallyBaseNonFiltered):
+
+    _filter_value_body = models.BinaryField(default=b'true')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._decoded_filter_value_body = None
+
+    @property
+    def filter_value_body(self):
+        if self._decoded_filter_value_body is None:
+            self._decoded_filter_value_body = json.loads(
+                self._filter_value_body.decode()
+            )
+        return self._decoded_filter_value_body
+
+    @filter_value_body.setter
+    def filter_value_body(self, value):
+        self._decoded_filter_value_body = value
+        self._filter_value_body = json.dumps(value).encode()
+
+    def refresh_from_db(self, *args, **kwargs):
+        super().refresh_from_db(*args, **kwargs)
+        self._decoded_filter_value_body = None
+
+    def filter_value(self, value):
+        return self.run(self.filter_value_body, value=value)
+
+    class Meta:
+        abstract = True
+
+
 class UserDefTallyBase(DBStored, UserDefTallyBaseNonStored):
 
     db_name = models.TextField(unique=True)
 
     def __init__(self, *args, **kwargs):
-        super(UserDefTallyBaseNonStored, self).__init__(None)
+        super(UserDefTallyBaseNonFiltered, self).__init__(None)
         super(DBStored, self).__init__(*args, **kwargs)
 
     class Meta:

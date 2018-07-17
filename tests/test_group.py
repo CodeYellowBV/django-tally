@@ -32,42 +32,46 @@ class GroupTest(TestCase):
 
         with counter(Foo):
             # Initial value
-            self.assertEqualGroups(counter.tally, {'even': 0, 'odd': 0})
+            self.assertEqualGroups(counter, {'even': 0, 'odd': 0})
             # Save model with even value
             even1 = Foo(value=0)
             even1.save()
-            self.assertEqualGroups(counter.tally, {'even': 1, 'odd': 0})
+            self.assertEqualGroups(counter, {'even': 1, 'odd': 0})
             # Save model with odd value
             odd1 = Foo(value=1)
             odd1.save()
-            self.assertEqualGroups(counter.tally, {'even': 1, 'odd': 1})
+            self.assertEqualGroups(counter, {'even': 1, 'odd': 1})
             # Save model with even but different value
             even2 = Foo(value=2)
             even2.save()
-            self.assertEqualGroups(counter.tally, {'even': 2, 'odd': 1})
+            self.assertEqualGroups(counter, {'even': 2, 'odd': 1})
             # Change model from even to odd
             even1.value = 1
             even1.save()
-            self.assertEqualGroups(counter.tally, {'even': 1, 'odd': 2})
+            self.assertEqualGroups(counter, {'even': 1, 'odd': 2})
             # Change value but remain even
             even2.value = 4
             even2.save()
-            self.assertEqualGroups(counter.tally, {'even': 1, 'odd': 2})
+            self.assertEqualGroups(counter, {'even': 1, 'odd': 2})
 
     def test_number_counter(self):
         counter = NumberCounter()
 
         with counter(Foo):
             Foo(value=1).save()
-            self.assertEqualGroups(counter.tally, {1: 1})
+            self.assertEqualGroups(counter, {1: 1})
             Foo(value=2).save()
-            self.assertEqualGroups(counter.tally, {1: 1, 2: 1})
+            self.assertEqualGroups(counter, {1: 1, 2: 1})
             Foo(value=3).save()
-            self.assertEqualGroups(counter.tally, {1: 1, 2: 1, 3: 1})
+            self.assertEqualGroups(counter, {1: 1, 2: 1, 3: 1})
             Foo(value=2).save()
-            self.assertEqualGroups(counter.tally, {1: 1, 2: 2, 3: 1})
+            self.assertEqualGroups(counter, {1: 1, 2: 2, 3: 1})
 
-    def assertEqualGroups(self, groups, values):
+    def assertEqualGroups(self, tally, values):
+        groups = dict(tally.tally)
+        for key in values:
+            if key not in groups:
+                groups[key] = super(Group, tally).get_tally()
         errors = [
             (key, groups[key], value)
             for key, value in values.items()

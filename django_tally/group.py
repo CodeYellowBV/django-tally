@@ -1,6 +1,3 @@
-from collections import defaultdict
-
-
 class Group:
     """
     Mixin that allows for keeping seperate tallies for certain groups based on
@@ -38,7 +35,7 @@ class Group:
         return value
 
     def get_tally(self):
-        return defaultdict(super().get_tally)
+        return {}
 
     def handle_change(self, tally, old_value, new_value):
         old_group = self.get_group(old_value)
@@ -60,6 +57,8 @@ class Group:
                 )
             if new_value is not None and new_group is not None:
                 # Add create event for new group
+                if new_group not in tally:
+                    tally[new_group] = super().get_tally()
                 tally[new_group] = super().handle_change(
                     tally[new_group], None, new_value
                 )

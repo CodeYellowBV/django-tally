@@ -1,16 +1,16 @@
 from django.test import TestCase
 
 from django_tally.db.models import UserDefTally, Data
+from django_tally.db.models.user_def_tally_base import instance_to_dict
 from django_tally.db.lang import KW
 
-from .testapp.models import Foo
+from .testapp.models import Foo, Baz
 
 
 class TestSimpleCounter(TestCase):
 
     def setUp(self):
-        self.counter = UserDefTally()
-        self.counter.db_name = 'counter'
+        self.counter = UserDefTally(db_name='counter')
 
         self.counter.base = [
             KW('defn'), KW('transform'), [KW('instance')], [
@@ -28,6 +28,10 @@ class TestSimpleCounter(TestCase):
             ],
         ]
         self.counter.get_tally_body = 0
+        self.counter.get_value_body = KW('instance')
+        self.counter.filter_value_body = [
+            KW('>='), [KW('transform'), KW('value')], 3
+        ]
         self.counter.handle_change_body = [
             KW('->'), KW('tally'),
             [KW('-'), [KW('transform'), KW('old_value')]],
@@ -40,10 +44,14 @@ class TestSimpleCounter(TestCase):
             # Initial value
             self.assertNotStored('counter')
             # Create model
-            foo = Foo(value=1)
+            foo = Foo(value=5)
             foo.save()
-            self.assertStored('counter', b'1')
-            # Change value
+            self.assertStored('counter', b'5')
+            # Change value below threshold
+            foo.value = 2
+            foo.save()
+            self.assertStored('counter', b'0')
+            # Change value again
             foo.value = 3
             foo.save()
             self.assertStored('counter', b'3')
@@ -53,20 +61,19 @@ class TestSimpleCounter(TestCase):
 
     def test_counter_refreshed(self):
         self.counter.refresh_from_db()
-        with self.counter(Foo):
-            # Initial value
-            self.assertNotStored('counter')
-            # Create model
-            foo = Foo(value=1)
-            foo.save()
-            self.assertStored('counter', b'1')
-            # Change value
-            foo.value = 3
-            foo.save()
-            self.assertStored('counter', b'3')
-            # Delete model
-            foo.delete()
-            self.assertStored('counter', b'0')
+        self.test_counter()
+
+    def test_instance_to_dict(self):
+        foo = Foo()
+        foo.save()
+        baz = Baz(foo=foo)
+        baz.save()
+        self.assertEqual(instance_to_dict(baz), {
+            KW('__class__'): 'Baz',
+            KW('id'): baz.id,
+            KW('foo'): foo.id,
+            KW('file'): None,
+        })
 
     def assertStored(self, db_name, value):
         try:
