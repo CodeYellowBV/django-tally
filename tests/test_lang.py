@@ -122,10 +122,6 @@ class TestLang(TestCase):
             'first argument of s-expression does not evaluate to callable'
         )
 
-    def test_eval_dict(self):
-        self.runExpr([KW('def'), KW('foo'), 'foo'])
-        self.runExpr({KW('foo'): 'bar'}, {'foo': 'bar'})
-
     def test_lang_exception_in_base_func(self):
         self.runExprFail(
             [KW('+'), [KW('/'), 1, 0]],

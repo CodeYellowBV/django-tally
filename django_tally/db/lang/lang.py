@@ -111,6 +111,19 @@ class Func:
             raise exc
 
 
+def debug(runner):
+    depth = 0
+    def debug_runner(body, env=None):
+        nonlocal depth
+        print('  ' * depth + '->', repr(body))
+        depth += 1
+        res = runner(body, env)
+        depth -= 1
+        print('  ' * depth + '<-', repr(res))
+        return res
+    return debug_runner
+
+
 def run(body, env=None):
     """
     Run a body of code.
@@ -139,17 +152,17 @@ def run(body, env=None):
             ))
 
         func = run(body[0], env)
-        if not callable(func):
+        if isinstance(func, (list, dict, tuple)):
+            params = [[KW('quote'), func], *body[1:]]
+            func = lang_get
+        elif not callable(func):
             raise LangException(ValueError(
                 'first argument of s-expression does not evaluate to callable'
             ))
+        else:
+            params = body[1:]
 
-        return func(body[1:], env)
-    elif isinstance(body, dict):
-        return {
-            run(key, env): run(val, env)
-            for key, val in body.items()
-        }
+        return func(params, env)
     else:
         return body
 
@@ -540,3 +553,126 @@ def lang_split(args, env):
     if len(args) != 2:
         raise TypeError('expected 2 arguments, got {}'.format(len(args)))
     return run(args[0], env).split(run(args[1], env))
+
+
+@register('null?')
+def lang_null_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return run(args[0], env) is None
+
+
+@register('int?')
+def lang_int_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return isinstance(run(args[0], env), int)
+
+
+@register('float?')
+def lang_float_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return isinstance(run(args[0], env), float)
+
+
+@register('bool?')
+def lang_bool_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return isinstance(run(args[0], env), bool)
+
+
+@register('str?')
+def lang_str_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return isinstance(run(args[0], env), str)
+
+
+@register('list?')
+def lang_list_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return isinstance(run(args[0], env), list)
+
+
+@register('dict?')
+def lang_dict_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return isinstance(run(args[0], env), dict)
+
+
+@register('tuple?')
+def lang_tuple_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return isinstance(run(args[0], env), tuple)
+
+
+@register('set?')
+def lang_set_check(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    return isinstance(run(args[0], env), set)
+
+
+@register('not-null?')
+def lang_not_null_check(args, env):
+    return not lang_null_check(args, env)
+
+
+@register('not-int?')
+def lang_not_int_check(args, env):
+    return not lang_int_check(args, env)
+
+
+@register('not-float?')
+def lang_not_float_check(args, env):
+    return not lang_float_check(args, env)
+
+
+@register('not-bool?')
+def lang_not_bool_check(args, env):
+    return not lang_bool_check(args, env)
+
+
+@register('not-str?')
+def lang_not_str_check(args, env):
+    return not lang_str_check(args, env)
+
+
+@register('not-list?')
+def lang_not_list_check(args, env):
+    return not lang_list_check(args, env)
+
+
+@register('not-dict?')
+def lang_not_dict_check(args, env):
+    return not lang_dict_check(args, env)
+
+
+@register('not-tuple?')
+def lang_not_tuple_check(args, env):
+    return not lang_tuple_check(args, env)
+
+
+@register('not-set?')
+def lang_not_set_check(args, env):
+    return not lang_set_check(args, env)
+
+
+@register('->')
+def lang_thread(args, env):
+    if not args:
+        raise TypeError(
+            'expected at least 1 argument, got {}'
+            .format(len(args))
+        )
+    if not all(isinstance(arg, list) for arg in args[1:]):
+        raise TypeError('every argument after the first must be a list')
+    body = args[0]
+    for arg in args[1:]:
+        body = [arg[0], body, *arg[1:]]
+    return run(body, env)
