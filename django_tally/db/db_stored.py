@@ -29,7 +29,7 @@ class DBStored:
     def get_db_name_no_none(self, value):
         return self.db_name
 
-    def to_db(self, tally):
+    def value_to_db(self, tally):
         """
         Convert the tally to binary data so that it can be stored in the db.
 
@@ -40,7 +40,7 @@ class DBStored:
         """
         return json.dumps(tally).encode()
 
-    def from_db(self, data):
+    def value_from_db(self, data):
         """
         Convert data from the db to a tally so that it can be used.
 
@@ -83,9 +83,9 @@ class DBStored:
                 data = Data(name=db_name)
                 tally = self.get_tally()
             else:
-                tally = self.from_db(data.value)
+                tally = self.value_from_db(data.value)
 
             tally = super().handle_change(tally, old_value, new_value)
 
-            data.value = self.to_db(tally)
+            data.value = self.value_to_db(tally)
             data.save()

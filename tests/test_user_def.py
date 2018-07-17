@@ -51,6 +51,23 @@ class TestSimpleCounter(TestCase):
             foo.delete()
             self.assertStored('counter', b'0')
 
+    def test_counter_refreshed(self):
+        self.counter.refresh_from_db()
+        with self.counter(Foo):
+            # Initial value
+            self.assertNotStored('counter')
+            # Create model
+            foo = Foo(value=1)
+            foo.save()
+            self.assertStored('counter', b'1')
+            # Change value
+            foo.value = 3
+            foo.save()
+            self.assertStored('counter', b'3')
+            # Delete model
+            foo.delete()
+            self.assertStored('counter', b'0')
+
     def assertStored(self, db_name, value):
         try:
             data = Data.objects.get(name=db_name)
