@@ -1,10 +1,10 @@
 from django.db import models
 
-from ...data import DBStored
-from ...tally import Tally
-from ...filter import Filter
+from ..data import DBStored
+from ..tally import Tally
+from ..filter import Filter
 
-from ..lang import run, Env, json, KW
+from .lang import run, Env, json, KW
 
 
 def instance_to_dict(instance):

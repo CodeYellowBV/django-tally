@@ -1,11 +1,11 @@
 from django.db import models
 
-from ...data import DBStored
-from ...group import Group
+from ..data import DBStored
+from ..group import Group
 from .user_def_tally_base import (
     UserDefTallyBaseNonStored, UserDefTallyBaseNonFiltered,
 )
-from ..lang import json
+from .lang import json
 
 
 class UserDefGroupTallyBaseNonStored(Group, UserDefTallyBaseNonStored):
