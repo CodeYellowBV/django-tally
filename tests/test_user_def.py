@@ -13,7 +13,7 @@ class TestSimpleCounter(TestCase):
     def setUp(self):
         self.counter = UserDefTally(db_name='counter')
 
-        self.counter.base = [
+        self.counter._base = [
             KW('defn'), KW('transform'), [KW('instance')], [
                 KW('if'), [
                     KW('and'),
@@ -28,12 +28,12 @@ class TestSimpleCounter(TestCase):
                 0,
             ],
         ]
-        self.counter.get_tally_body = 0
-        self.counter.get_value_body = KW('instance')
-        self.counter.filter_value_body = [
+        self.counter._get_tally_body = 0
+        self.counter._get_value_body = KW('instance')
+        self.counter._filter_value_body = [
             KW('>='), [KW('transform'), KW('value')], 3
         ]
-        self.counter.handle_change_body = [
+        self.counter._handle_change_body = [
             KW('->'), KW('tally'),
             [KW('-'), [KW('transform'), KW('old_value')]],
             [KW('+'), [KW('transform'), KW('new_value')]],

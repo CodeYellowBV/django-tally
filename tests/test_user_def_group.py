@@ -15,7 +15,7 @@ class TestValueCounter(TestCase):
     def setUp(self):
         self.counter = UserDefGroupTally(db_name='counter')
 
-        self.counter.base = [
+        self.counter._base = [
             KW('defn'), KW('transform'), [KW('value')], [
                 KW('if'), [
                     KW('and'),
@@ -30,8 +30,8 @@ class TestValueCounter(TestCase):
                 0,
             ]
         ]
-        self.counter.get_tally_body = 0
-        self.counter.get_group_body = [
+        self.counter._get_tally_body = 0
+        self.counter._get_group_body = [
             KW('if'), [
                 KW('and'),
                 [KW('not-null?'), KW('value')],
@@ -44,7 +44,7 @@ class TestValueCounter(TestCase):
             [KW('str'), [KW('value'), [KW('quote'), KW('value')]]],
             None,
         ]
-        self.counter.handle_change_body = [
+        self.counter._handle_change_body = [
             KW('->'), KW('tally'),
             [KW('-'), [KW('transform'), KW('old_value')]],
             [KW('+'), [KW('transform'), KW('new_value')]],

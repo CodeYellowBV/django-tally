@@ -10,31 +10,29 @@ from .lang import json
 
 class UserDefGroupTallyBaseNonStored(Group, UserDefTallyBaseNonStored):
 
-    _get_group_body = models.BinaryField()
+    get_group_body = models.TextField()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._decoded_get_group_body = None
 
     @property
-    def get_group_body(self):
+    def _get_group_body(self):
         if self._decoded_get_group_body is None:
-            self._decoded_get_group_body = json.loads(
-                self._get_group_body.decode()
-            )
+            self._decoded_get_group_body = json.loads(self.get_group_body)
         return self._decoded_get_group_body
 
-    @get_group_body.setter
-    def get_group_body(self, value):
+    @_get_group_body.setter
+    def _get_group_body(self, value):
         self._decoded_get_group_body = value
-        self._get_group_body = json.dumps(value).encode()
+        self.get_group_body = json.dumps(value)
 
     def refresh_from_db(self, *args, **kwargs):
         self._decoded_get_group_body = None
         return super().refresh_from_db()
 
     def get_group(self, value):
-        return self.run(self.get_group_body, value=value)
+        return self.run(self._get_group_body, value=value)
 
     class Meta:
         abstract = True

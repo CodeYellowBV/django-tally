@@ -14,6 +14,8 @@ INSTALLED_APPS = [
 ]
 
 MIGRATION_MODULES = {
+    'data': None,
+    'user_def': None,
     'testapp': None,
 }
 
