@@ -19,7 +19,7 @@ class FilterTest(TestCase):
     def test_filter(self):
         foo_counter = FooCounter()
 
-        with foo_counter(Foo, Bar):
+        with foo_counter.on(Foo, Bar):
             # Initial value
             self.assertEqual(foo_counter.tally, 0)
             # Save Foo instance

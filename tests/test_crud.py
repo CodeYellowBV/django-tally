@@ -30,7 +30,7 @@ class CRUDTallyTest(TestCase):
         crud_tally.handle_update = Mock()
         crud_tally.handle_delete = Mock()
 
-        with crud_tally(Foo):
+        with crud_tally.on(Foo):
             # Initial state
             crud_tally.handle_create.assert_not_called()
             crud_tally.handle_update.assert_not_called()
@@ -58,7 +58,7 @@ class ForwardTest(TestCase):
 
     def test_calls_forwarded(self):
         crud_tally = CRUDTally()
-        with crud_tally(Foo):
+        with crud_tally.on(Foo):
             # Initial state
             self.assertEqual(crud_tally.tally, None)
             # Save model

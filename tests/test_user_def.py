@@ -2,6 +2,7 @@ from django.test import TestCase
 
 from django_tally.data.models import Data
 from django_tally.user_def.models import UserDefTally
+from django_tally.user_def.listen import listen
 from django_tally.user_def.tally import instance_to_dict
 from django_tally.user_def.lang import KW
 
@@ -12,7 +13,6 @@ class TestSimpleCounter(TestCase):
 
     def setUp(self):
         self.counter = UserDefTally(db_name='counter')
-
         self.counter._base = [
             KW('defn'), KW('transform'), [KW('instance')], [
                 KW('if'), [
@@ -23,8 +23,7 @@ class TestSimpleCounter(TestCase):
                         [KW('instance'), [KW('quote'), KW('__class__')]],
                         'Foo'
                     ],
-                ],
-                [KW('instance'), [KW('quote'), KW('value')]],
+                ], [KW('instance'), [KW('quote'), KW('value')]],
                 0,
             ],
         ]
@@ -41,7 +40,7 @@ class TestSimpleCounter(TestCase):
         self.counter.save()
 
     def test_counter(self):
-        with self.counter(Foo):
+        with self.counter.on(Foo):
             # Initial value
             self.assertNotStored('counter')
             # Create model
@@ -75,6 +74,57 @@ class TestSimpleCounter(TestCase):
             KW('foo'): foo.id,
             KW('file'): None,
         })
+
+    def test_listen(self):
+        sub = listen(Foo)
+
+        # Initial value
+        self.assertNotStored('counter')
+        # Create model
+        foo = Foo(value=5)
+        foo.save()
+        self.assertStored('counter', b'5')
+        # Make values count twice
+        self.counter._base = [
+            KW('defn'), KW('transform'), [KW('instance')], [
+                KW('if'), [
+                    KW('and'),
+                    [KW('not-null?'), KW('instance')],
+                    [
+                        KW('='),
+                        [KW('instance'), [KW('quote'), KW('__class__')]],
+                        'Foo'
+                    ],
+                ], [KW('*'), [KW('instance'), [KW('quote'), KW('value')]], 2],
+                0,
+            ],
+        ]
+        self.counter.save()
+        # Update foo
+        foo.value = 6
+        foo.save()
+        # Note: tally does not know how it used to handle the value so we only
+        # get the difference in value *2 added to the tally.
+        self.assertStored('counter', b'7')
+        # Delete foo
+        foo.delete()
+        self.assertStored('counter', b'-5')
+
+        sub.close()
+
+    def test_listen_delete(self):
+        sub = listen(Foo)
+
+        # Initial value
+        self.assertNotStored('counter')
+        # Delete counter
+        self.counter.delete()
+        # Create model
+        foo = Foo(value=5)
+        foo.save()
+        self.assertNotStored('counter')
+
+        sub.close()
 
     def assertStored(self, db_name, value):
         try:

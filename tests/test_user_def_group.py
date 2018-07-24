@@ -53,7 +53,7 @@ class TestValueCounter(TestCase):
         self.counter.save()
 
     def test_counter(self):
-        with self.counter(Foo):
+        with self.counter.on(Foo):
             # Initial value
             self.assertNotStored()
             # Save model with value 1

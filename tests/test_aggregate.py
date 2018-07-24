@@ -16,7 +16,7 @@ counter = Counter()
 
 class SumTest(TestCase):
 
-    @counter(Foo)
+    @counter.on(Foo)
     def test_simple_count(self):
         # Initial value
         self.assertEqual(counter.tally, 0)

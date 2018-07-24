@@ -20,7 +20,7 @@ tally = MyTally()
 @patch.object(tally, '_handle')
 class TallyHandleTest(TestCase):
 
-    @tally(Foo)
+    @tally.on(Foo)
     def test_subscription(self, handle):
         # Initial state
         handle.assert_not_called()
@@ -42,7 +42,7 @@ class TallyHandleTest(TestCase):
         handle.assert_not_called()
         # Open subscription and save model
         foo = Foo()
-        with tally(Foo):
+        with tally.on(Foo):
             foo.save()
             handle.assert_called_once_with(None, foo)
         handle.reset_mock()

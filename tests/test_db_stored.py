@@ -32,7 +32,7 @@ class StoreTest(TestCase):
     def test_simple_store(self):
         counter = StoredCounter()
 
-        with counter(Foo):
+        with counter.on(Foo):
             # Initial state
             self.assertNotStored('counter')
             self.assertEqual(counter.tally, None)
@@ -53,7 +53,7 @@ class StoreTest(TestCase):
     def test_multi_name_store(self):
         counter = StoredValueCounter()
 
-        with counter(Foo):
+        with counter.on(Foo):
             # Initial state
             self.assertNotStored('counter_0')
             self.assertNotStored('counter_1')

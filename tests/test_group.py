@@ -30,7 +30,7 @@ class GroupTest(TestCase):
     def test_odd_even(self):
         counter = OddEvenCounter()
 
-        with counter(Foo):
+        with counter.on(Foo):
             # Initial value
             self.assertEqualGroups(counter, {'even': 0, 'odd': 0})
             # Save model with even value
@@ -57,7 +57,7 @@ class GroupTest(TestCase):
     def test_number_counter(self):
         counter = NumberCounter()
 
-        with counter(Foo):
+        with counter.on(Foo):
             Foo(value=1).save()
             self.assertEqualGroups(counter, {1: 1})
             Foo(value=2).save()
