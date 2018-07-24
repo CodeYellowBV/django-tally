@@ -1,10 +1,10 @@
 #! /usr/bin/env python3
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(
     name='django-tally',
-    packages=['django_tally'],
+    packages=find_packages(include=['django_tally', 'django_tally.*']),
     license='MIT',
     version='0.1.0',
     description='A package for easily tallying Django data.',
