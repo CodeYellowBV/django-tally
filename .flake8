@@ -1,8 +1,9 @@
 [flake8]
 exclude =
-    # Not our code
+    # Not the source
     venv,
     .eggs,
+    build,
     # Auto created by Django which doesn't care about line length at all
     django_tally/data/migrations,
     django_tally/user_def/migrations,
