@@ -3,8 +3,9 @@ import json
 from django.test import TestCase
 
 from django_tally import Group
-from django_tally.db.models import UserDefGroupTally, Data
-from django_tally.db.lang import KW
+from django_tally.data.models import Data
+from django_tally.user_def.models import UserDefGroupTally
+from django_tally.user_def.lang import KW
 
 from .testapp.models import Foo
 

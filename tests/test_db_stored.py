@@ -1,8 +1,8 @@
 from django.test import TestCase
 
 from django_tally import Tally, Sum, Filter
-from django_tally.db import DBStored
-from django_tally.db.models import Data
+from django_tally.data import DBStored
+from django_tally.data.models import Data
 
 from .testapp.models import Foo
 

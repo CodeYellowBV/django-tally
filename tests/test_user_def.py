@@ -1,8 +1,9 @@
 from django.test import TestCase
 
-from django_tally.db.models import UserDefTally, Data
-from django_tally.db.models.user_def_tally_base import instance_to_dict
-from django_tally.db.lang import KW
+from django_tally.data.models import Data
+from django_tally.user_def.models import UserDefTally
+from django_tally.user_def.user_def_tally import instance_to_dict
+from django_tally.user_def.lang import KW
 
 from .testapp.models import Foo, Baz
 

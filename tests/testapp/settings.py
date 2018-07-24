@@ -8,7 +8,8 @@ DATABASES = {
 }
 
 INSTALLED_APPS = [
-    'django_tally.db',
+    'django_tally.data',
+    'django_tally.user_def',
     'tests.testapp',
 ]
 

@@ -1,10 +1,10 @@
 from django.db import models
 
-from ..db_stored import DBStored
-from ...tally import Tally
-from ...filter import Filter
+from ..data import DBStored
+from ..tally import Tally
+from ..filter import Filter
 
-from ..lang import run, Env, json, KW
+from .lang import run, Env, json, KW
 
 
 def instance_to_dict(instance):
@@ -187,4 +187,20 @@ def get_user_def_tally_base(base_class=models.Model, return_all=False):
         return UserDefTallyBase
 
 
-UserDefTallyBase = get_user_def_tally_base()
+def get_user_def_tally(base_class=models.Model):
+    """
+    Creates a user def tally class for a certain base class.
+
+    @param base_class: Class
+        The base class to base the returned class on. Defaults to
+        django.db.models.Model.
+    @return: Class
+        The generated base class.
+    """
+
+    UserDefTallyBase = get_user_def_tally_base(base_class)
+
+    class UserDefTally(UserDefTallyBase):
+        pass
+
+    return UserDefTally

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from django_tally.db.lang import run, KW, LangException, Env, Func
-from django_tally.db.lang.json import encode, decode, dumps, loads
+from django_tally.user_def.lang import run, KW, LangException, Env, Func
+from django_tally.user_def.lang.json import encode, decode, dumps, loads
 
 
 sample = [
