@@ -2,9 +2,7 @@ from django.db import models
 
 from ..data import DBStored
 from ..group import Group
-from .user_def_tally_base import (
-    UserDefTallyBaseNonStored, UserDefTallyBaseNonFiltered,
-)
+from .tally import UserDefTallyBaseNonStored, UserDefTallyBaseNonFiltered
 from .lang import json
 
 
