@@ -1,5 +1,3 @@
-from functools import partial
-
 from django.db.models import Model
 from django.db.models.signals import post_save, post_delete
 
