@@ -49,7 +49,7 @@ class DBStored:
         @return: Any
             The converted tally.
         """
-        return json.loads(data.decode())
+        return json.loads(bytes(data).decode())
 
     def __init__(self):
         super().__init__(None)
