@@ -109,6 +109,7 @@ class Tally:
         @param kwargs: Mapping
             Remaining keyword arguments.
         """
+        new_value = self.get_value(instance)
         if created:
             old_value = None
         elif instance.pk in self.__model_data[type(instance)]:
@@ -116,7 +117,6 @@ class Tally:
         else:
             self.__model_data[type(instance)][instance.pk] = new_value
             return
-        new_value = self.get_value(instance)
         self._handle(old_value, new_value)
         self.__model_data[type(instance)][instance.pk] = new_value
 
