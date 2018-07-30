@@ -4,7 +4,7 @@ from django_tally.data.models import Data
 from django_tally.user_def.models import UserDefTally
 from django_tally.user_def.listen import listen
 from django_tally.user_def.tally import instance_to_dict
-from django_tally.user_def.lang import KW
+from django_tally.user_def.lang import KW, json
 
 from .testapp.models import Foo, Baz
 
@@ -13,7 +13,7 @@ class TestSimpleCounter(TestCase):
 
     def setUp(self):
         self.counter = UserDefTally(db_name='counter')
-        self.counter._base = [
+        self.counter.base = json.dumps([
             KW('defn'), KW('transform'), [KW('instance')], [
                 KW('if'), [
                     KW('and'),
@@ -26,21 +26,21 @@ class TestSimpleCounter(TestCase):
                 ], [KW('instance'), [KW('quote'), KW('value')]],
                 0,
             ],
-        ]
-        self.counter._get_tally_body = 0
-        self.counter._get_value_body = KW('instance')
-        self.counter._filter_value_body = [
+        ])
+        self.counter.get_tally = json.dumps(0)
+        self.counter.get_value = json.dumps(KW('instance'))
+        self.counter.filter_value = json.dumps([
             KW('>='), [KW('transform'), KW('value')], 3
-        ]
-        self.counter._handle_change_body = [
+        ])
+        self.counter.handle_change = json.dumps([
             KW('->'), KW('tally'),
             [KW('-'), [KW('transform'), KW('old_value')]],
             [KW('+'), [KW('transform'), KW('new_value')]],
-        ]
+        ])
         self.counter.save()
 
     def test_counter(self):
-        with self.counter.on(Foo):
+        with self.counter.as_tally().on(Foo):
             # Initial value
             self.assertNotStored('counter')
             # Create model
@@ -85,7 +85,7 @@ class TestSimpleCounter(TestCase):
         foo.save()
         self.assertStored('counter', b'5')
         # Make values count twice
-        self.counter._base = [
+        self.counter.base = json.dumps([
             KW('defn'), KW('transform'), [KW('instance')], [
                 KW('if'), [
                     KW('and'),
@@ -98,7 +98,7 @@ class TestSimpleCounter(TestCase):
                 ], [KW('*'), [KW('instance'), [KW('quote'), KW('value')]], 2],
                 0,
             ],
-        ]
+        ])
         self.counter.save()
         # Update foo
         foo.value = 6

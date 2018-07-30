@@ -1,11 +1,9 @@
-import json
-
 from django.test import TestCase
 
 from django_tally import Group
 from django_tally.data.models import Data
 from django_tally.user_def.models import UserDefGroupTally
-from django_tally.user_def.lang import KW
+from django_tally.user_def.lang import KW, json
 
 from .testapp.models import Foo
 
@@ -14,8 +12,7 @@ class TestValueCounter(TestCase):
 
     def setUp(self):
         self.counter = UserDefGroupTally(db_name='counter')
-
-        self.counter._base = [
+        self.counter.base = json.dumps([
             KW('defn'), KW('transform'), [KW('value')], [
                 KW('if'), [
                     KW('and'),
@@ -29,9 +26,9 @@ class TestValueCounter(TestCase):
                 1,
                 0,
             ]
-        ]
-        self.counter._get_tally_body = 0
-        self.counter._get_group_body = [
+        ])
+        self.counter.get_tally = json.dumps(0)
+        self.counter.get_group = json.dumps([
             KW('if'), [
                 KW('and'),
                 [KW('not-null?'), KW('value')],
@@ -43,17 +40,16 @@ class TestValueCounter(TestCase):
             ],
             [KW('str'), [KW('value'), [KW('quote'), KW('value')]]],
             None,
-        ]
-        self.counter._handle_change_body = [
+        ])
+        self.counter.handle_change = json.dumps([
             KW('->'), KW('tally'),
             [KW('-'), [KW('transform'), KW('old_value')]],
             [KW('+'), [KW('transform'), KW('new_value')]],
-        ]
-
+        ])
         self.counter.save()
 
     def test_counter(self):
-        with self.counter.on(Foo):
+        with self.counter.as_tally().on(Foo):
             # Initial value
             self.assertNotStored()
             # Save model with value 1
@@ -92,7 +88,7 @@ class TestValueCounter(TestCase):
         groups = json.loads(data.value.decode())
         for key in values:
             if key not in groups:
-                groups[key] = super(Group, self.counter).get_tally()
+                groups[key] = super(Group, self.counter.as_tally()).get_tally()
         errors = [
             (key, groups[key], value)
             for key, value in values.items()

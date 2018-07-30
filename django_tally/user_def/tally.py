@@ -20,129 +20,92 @@ def instance_to_dict(instance):
     return res
 
 
-class UserDefTallyBaseNonStored(Tally, models.Model):
+class UserDefTallyBaseNonStored(models.Model):
 
     base = models.TextField(default='null')
-    get_tally_body = models.TextField()
-    get_value_body = models.TextField(default='"k:instance"')
-    handle_change_body = models.TextField()
-    filter_value_body = models.TextField(default='true')
+    get_tally = models.TextField()
+    get_value = models.TextField(default='"k:instance"')
+    get_nonexisting_value = models.TextField(default='null')
+    filter_value = models.TextField(default='true')
+    handle_change = models.TextField()
 
-    def __init__(self, *args, **kwargs):
-        super(Tally, self).__init__(*args, **kwargs)
-        self._env = None
-        self._decoded_base = None
-        self._decoded_get_tally_body = None
-        self._decoded_get_value_body = None
-        self._decoded_handle_change_body = None
-        self._decoded_filter_value_body = None
+    def as_tally(self, **kwargs):
+        base = json.loads(self.base)
+        get_tally = json.loads(self.get_tally)
+        get_value = json.loads(self.get_value)
+        get_nonexisting_value = json.loads(self.get_nonexisting_value)
+        filter_value = json.loads(self.filter_value)
+        handle_change = json.loads(self.handle_change)
 
-    @property
-    def _base(self):
-        if self._decoded_base is None:
-            self._decoded_base = json.loads(self.base)
-        return self._decoded_base
+        env = Env()
+        run(base, env)
 
-    @_base.setter
-    def _base(self, value):
-        self._env = None
-        self._decoded_base = value
-        self.base = json.dumps(value)
-
-    @property
-    def _get_tally_body(self):
-        if self._decoded_get_tally_body is None:
-            self._decoded_get_tally_body = json.loads(self.get_tally_body)
-        return self._decoded_get_tally_body
-
-    @_get_tally_body.setter
-    def _get_tally_body(self, value):
-        self._decoded_get_tally_body = value
-        self.get_tally_body = json.dumps(value)
-
-    @property
-    def _get_value_body(self):
-        if self._decoded_get_value_body is None:
-            self._decoded_get_value_body = json.loads(self.get_value_body)
-        return self._decoded_get_value_body
-
-    @_get_value_body.setter
-    def _get_value_body(self, value):
-        self._decoded_get_value_body = value
-        self.get_value_body = json.dumps(value)
-
-    @property
-    def _handle_change_body(self):
-        if self._decoded_handle_change_body is None:
-            self._decoded_handle_change_body = json.loads(
-                self.handle_change_body
-            )
-        return self._decoded_handle_change_body
-
-    @_handle_change_body.setter
-    def _handle_change_body(self, value):
-        self._decoded_handle_change_body = value
-        self.handle_change_body = json.dumps(value)
-
-    @property
-    def _filter_value_body(self):
-        if self._decoded_filter_value_body is None:
-            self._decoded_filter_value_body = json.loads(
-                self.filter_value_body
-            )
-        return self._decoded_filter_value_body
-
-    @_filter_value_body.setter
-    def _filter_value_body(self, value):
-        self._decoded_filter_value_body = value
-        self.filter_value_body = json.dumps(value)
-
-    def refresh_from_db(self, *args, **kwargs):
-        self._env = None
-        self._decoded_base = None
-        self._decoded_get_tally_body = None
-        self._decoded_get_value_body = None
-        self._decoded_handle_change_body = None
-        self._decoded_filter_value_body = None
-        return super().refresh_from_db()
-
-    def get_tally(self):
-        return self.run(self._get_tally_body)
-
-    def get_value(self, instance):
-        return self.run(
-            self._get_value_body,
-            instance=instance_to_dict(instance),
+        return self.UserTally(
+            env=env,
+            get_tally=get_tally,
+            get_value=get_value,
+            get_nonexisting_value=get_nonexisting_value,
+            filter_value=filter_value,
+            handle_change=handle_change,
+            **kwargs
         )
 
-    def handle_change(self, tally, old_value, new_value):
-        return self.run(
-            self._handle_change_body,
-            tally=tally,
-            old_value=old_value,
-            new_value=new_value,
-        )
+    class UserTally(Tally):
 
-    def filter_value(self, value):
-        return self.run(self._filter_value_body, value=value)
+        def __init__(
+            self, env, get_tally, get_value, get_nonexisting_value,
+            filter_value, handle_change,
+        ):
+            super().__init__(None)
+            self._env = env
+            self._get_tally = get_tally
+            self._get_value = get_value
+            self._get_nonexisting_value = get_nonexisting_value
+            self._filter_value = filter_value
+            self._handle_change = handle_change
 
-    def run(self, body, *args, **kwargs):
-        if self._env is None:
-            self._env = Env()
-            run(self._base, self._env)
-        return run(body, Env(*args, base_env=self._env, **kwargs))
+        def get_tally(self):
+            return run(self._get_tally, Env(base_env=self._env))
+
+        def get_value(self, instance):
+            return run(self._get_value, Env(
+                base_env=self._env,
+                instance=instance_to_dict(instance),
+            ))
+
+        def get_nonexisting_value(self):
+            return run(self._get_nonexisting_value, Env(base_env=self._env))
+
+        def filter_value(self, value):
+            return run(self._filter_value, Env(
+                base_env=self._env,
+                value=value,
+            ))
+
+        def handle_change(self, tally, old_value, new_value):
+            return run(self._handle_change, Env(
+                base_env=self._env,
+                tally=tally,
+                old_value=old_value,
+                new_value=new_value,
+            ))
 
     class Meta:
         abstract = True
 
 
-class UserDefTallyBase(DBStored, UserDefTallyBaseNonStored):
+class UserDefTallyBase(UserDefTallyBaseNonStored):
 
     db_name = models.TextField(unique=True)
 
-    def __init__(self, *args, **kwargs):
-        super(UserDefTallyBaseNonStored, self).__init__(None)
-        super(DBStored, self).__init__(*args, **kwargs)
+    def as_tally(self):
+        return super().as_tally(db_name=self.db_name)
+
+    class UserTally(DBStored, UserDefTallyBaseNonStored.UserTally):
+
+        def __init__(self, db_name, **kwargs):
+            super(DBStored, self).__init__(**kwargs)
+            self.db_name = db_name
 
     class Meta:
         abstract = True

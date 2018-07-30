@@ -3,46 +3,41 @@ from django.db import models
 from ..data import DBStored
 from ..group import Group
 from .tally import UserDefTallyBaseNonStored
-from .lang import json
+from .lang import json, run, Env
 
 
-class UserDefGroupTallyBaseNonStored(Group, UserDefTallyBaseNonStored):
+class UserDefGroupTallyBaseNonStored(UserDefTallyBaseNonStored):
 
-    get_group_body = models.TextField()
+    get_group = models.TextField()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._decoded_get_group_body = None
+    def as_tally(self, **kwargs):
+        return super().as_tally(get_group=json.loads(self.get_group), **kwargs)
 
-    @property
-    def _get_group_body(self):
-        if self._decoded_get_group_body is None:
-            self._decoded_get_group_body = json.loads(self.get_group_body)
-        return self._decoded_get_group_body
+    class UserTally(Group, UserDefTallyBaseNonStored.UserTally):
 
-    @_get_group_body.setter
-    def _get_group_body(self, value):
-        self._decoded_get_group_body = value
-        self.get_group_body = json.dumps(value)
+        def __init__(self, get_group=None, **kwargs):
+            super(Group, self).__init__(**kwargs)
+            self._get_group = get_group
 
-    def refresh_from_db(self, *args, **kwargs):
-        self._decoded_get_group_body = None
-        return super().refresh_from_db()
-
-    def get_group(self, value):
-        return self.run(self._get_group_body, value=value)
+        def get_group(self, value):
+            return run(self._get_group, Env(base_env=self._env, value=value))
 
     class Meta:
         abstract = True
 
 
-class UserDefGroupTallyBase(DBStored, UserDefGroupTallyBaseNonStored):
+class UserDefGroupTallyBase(UserDefGroupTallyBaseNonStored):
 
     db_name = models.TextField(unique=True)
 
-    def __init__(self, *args, **kwargs):
-        super(UserDefTallyBaseNonStored, self).__init__(None)
-        super(DBStored, self).__init__(*args, **kwargs)
+    def as_tally(self):
+        return super().as_tally(db_name=self.db_name)
+
+    class UserTally(DBStored, UserDefGroupTallyBaseNonStored.UserTally):
+
+        def __init__(self, db_name=None, **kwargs):
+            super(DBStored, self).__init__(**kwargs)
+            self.db_name = db_name
 
     class Meta:
         abstract = True

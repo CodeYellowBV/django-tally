@@ -20,22 +20,20 @@ class TallySubscription(Subscription):
         self._senders = senders
         self._active_tallies = {}
 
-    def _open_tally(self, tally):
-        self._active_tallies[tally] = tally.listen(*self._senders)
+    def _open_tally(self, instance):
+        old_tally = self._close_tally(instance)
+        tally = instance.as_tally()
+        if old_tally is not None:
+            tally._Tally__model_data = old_tally._Tally__model_data
+        self._active_tallies[instance] = (tally, tally.listen(*self._senders))
 
-    def _close_tally(self, tally):
-        if tally in self._active_tallies:
-            self._active_tallies.pop(tally).close()
+    def _close_tally(self, instance):
+        if instance in self._active_tallies:
+            tally, sub = self._active_tallies.pop(instance)
+            sub.close()
+            return tally
 
     def handle_post_save(self, sender, instance, **args):
-        if instance in self._active_tallies:
-            old = next(
-                ins
-                for ins, _ in self._active_tallies.items()
-                if ins == instance
-            )
-            instance._Tally__model_data = old._Tally__model_data
-            self._close_tally(old)
         self._open_tally(instance)
 
     def handle_post_delete(self, sender, instance, **args):
