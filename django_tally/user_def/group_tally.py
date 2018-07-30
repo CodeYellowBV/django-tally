@@ -2,7 +2,7 @@ from django.db import models
 
 from ..data import DBStored
 from ..group import Group
-from .tally import UserDefTallyBaseNonStored, UserDefTallyBaseNonFiltered
+from .tally import UserDefTallyBaseNonStored
 from .lang import json
 
 
@@ -41,7 +41,7 @@ class UserDefGroupTallyBase(DBStored, UserDefGroupTallyBaseNonStored):
     db_name = models.TextField(unique=True)
 
     def __init__(self, *args, **kwargs):
-        super(UserDefTallyBaseNonFiltered, self).__init__(None)
+        super(UserDefTallyBaseNonStored, self).__init__(None)
         super(DBStored, self).__init__(*args, **kwargs)
 
     class Meta:

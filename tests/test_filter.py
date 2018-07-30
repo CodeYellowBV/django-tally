@@ -1,11 +1,11 @@
 from django.test import TestCase
 
-from django_tally import Tally, Filter, Sum
+from django_tally import Tally, Sum
 
 from .testapp.models import Foo, Bar
 
 
-class FooCounter(Filter, Sum, Tally):
+class FooCounter(Sum, Tally):
 
     def filter_value(self, value):
         return isinstance(value, Foo)

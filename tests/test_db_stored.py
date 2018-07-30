@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from django_tally import Tally, Sum, Filter
+from django_tally import Tally, Sum
 from django_tally.data import DBStored
 from django_tally.data.models import Data
 
@@ -15,7 +15,7 @@ class StoredCounter(DBStored, Sum, Tally):
         return 0 if value is None else 1
 
 
-class StoredValueCounter(DBStored, Sum, Filter, Tally):
+class StoredValueCounter(DBStored, Sum, Tally):
 
     def filter_value(self, value):
         return isinstance(value, Foo)

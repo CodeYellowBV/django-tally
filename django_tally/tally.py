@@ -34,6 +34,26 @@ class Tally:
         """
         return deepcopy(instance)
 
+    def get_nonexisting_value(self):
+        """
+        Get value to use for a non existing model instance.
+
+        @return: Any
+            Value to use.
+        """
+        return None
+
+    def filter_value(self, value):
+        """
+        Method to filter if a value should be included.
+
+        @param value: Any
+            Value of the model.
+        @return: bool
+            Whether the value should be included.
+        """
+        return True
+
     def handle_change(self, tally, old_value, new_value):
         """
         Change tally based on a change to a model instance.
@@ -110,15 +130,23 @@ class Tally:
             Remaining keyword arguments.
         """
         new_value = self.get_value(instance)
+
         if created:
-            old_value = None
+            old_value = self.get_nonexisting_value()
         elif instance.pk in self.__model_data[type(instance)]:
             old_value = self.__model_data[type(instance)][instance.pk]
+            if not self.filter_value(old_value):
+                old_value = self.get_nonexisting_value()
         else:
             self.__model_data[type(instance)][instance.pk] = new_value
             return
-        self._handle(old_value, new_value)
+
         self.__model_data[type(instance)][instance.pk] = new_value
+
+        if not self.filter_value(new_value):
+            new_value = self.get_nonexisting_value()
+
+        self._handle(old_value, new_value)
 
     def _handle_post_delete(self, sender, instance, **kwargs):
         """
@@ -133,8 +161,16 @@ class Tally:
         """
         if instance.pk not in self.__model_data[type(instance)]:
             return
-        self._handle(self.__model_data[type(instance)][instance.pk], None)
+
+        old_value = self.__model_data[type(instance)][instance.pk]
         del self.__model_data[type(instance)][instance.pk]
+
+        if not self.filter_value(old_value):
+            old_value = self.get_nonexisting_value()
+        self._handle(
+            old_value,
+            self.get_nonexisting_value(),
+        )
 
     def on(self, *senders, sub=None):
         """
