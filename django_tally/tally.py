@@ -90,6 +90,8 @@ class Tally:
         @param kwargs: Mapping
             Remaining keyword arguments.
         """
+        if instance.pk is None:
+            return
         self.__model_data[type(instance)][instance.pk] = (
             self.get_value(instance)
         )
@@ -109,8 +111,11 @@ class Tally:
         """
         if created:
             old_value = None
-        else:
+        elif instance.pk in self.__model_data[type(instance)]:
             old_value = self.__model_data[type(instance)][instance.pk]
+        else:
+            self.__model_data[type(instance)][instance.pk] = new_value
+            return
         new_value = self.get_value(instance)
         self._handle(old_value, new_value)
         self.__model_data[type(instance)][instance.pk] = new_value
@@ -126,6 +131,8 @@ class Tally:
         @param kwargs: Mapping
             Remaining keyword arguments.
         """
+        if instance.pk not in self.__model_data[type(instance)]:
+            return
         self._handle(self.__model_data[type(instance)][instance.pk], None)
         del self.__model_data[type(instance)][instance.pk]
 
