@@ -224,3 +224,4 @@ class Tally:
         Resets the tally to it's original value.
         """
         self.tally = self.get_tally()
+        self.__model_data = defaultdict(dict)

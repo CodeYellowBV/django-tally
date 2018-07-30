@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 import django_tally.data.db_stored
-import django_tally.filter
 import django_tally.group
 import django_tally.tally
 
@@ -30,7 +29,7 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
-            bases=(django_tally.data.db_stored.DBStored, django_tally.group.Group, django_tally.filter.Filter, django_tally.tally.Tally, models.Model),
+            bases=(django_tally.data.db_stored.DBStored, django_tally.group.Group, django_tally.tally.Tally, models.Model),
         ),
         migrations.CreateModel(
             name='UserDefTally',
@@ -46,6 +45,6 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
-            bases=(django_tally.data.db_stored.DBStored, django_tally.filter.Filter, django_tally.tally.Tally, models.Model),
+            bases=(django_tally.data.db_stored.DBStored, django_tally.tally.Tally, models.Model),
         ),
     ]

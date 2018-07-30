@@ -20,6 +20,9 @@ tally = MyTally()
 @patch.object(tally, '_handle')
 class TallyHandleTest(TestCase):
 
+    def setUp(self):
+        tally.reset()
+
     @tally.on(Foo)
     def test_subscription(self, handle):
         # Initial state
@@ -81,6 +84,38 @@ class TallyHandleTest(TestCase):
         handle.assert_called_once_with(None, bar)
 
         sub.close()
+
+    def test_get_obj(self, handle):
+        foo = Foo(value=3)
+        foo.save()
+
+        with tally.on(Foo):
+            foo_ref = Foo.objects.get(pk=foo.pk)
+            foo_ref.save()
+
+        handle.assert_called_once_with(foo_ref, foo_ref)
+
+    def test_ignore_init_before_save_after_listening(self, handle):
+        tally.reset()
+        foo = Foo(value=3)
+        foo.save()
+
+        foo_ref = Foo.objects.get(pk=foo.pk)
+        with tally.on(Foo):
+            foo_ref.save()
+
+        handle.assert_not_called()
+
+    def test_ignore_init_before_delete_after_listening(self, handle):
+        tally.reset()
+        foo = Foo(value=3)
+        foo.save()
+
+        foo_ref = Foo.objects.get(pk=foo.pk)
+        with tally.on(Foo):
+            foo_ref.delete()
+
+        handle.assert_not_called()
 
 
 class FooTally(Tally):
