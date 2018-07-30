@@ -36,7 +36,7 @@ class TallySubscription(Subscription):
             )
             instance._Tally__model_data = old._Tally__model_data
             self._close_tally(old)
-            self._open_tally(instance)
+        self._open_tally(instance)
 
     def handle_post_delete(self, sender, instance, **args):
         self._close_tally(instance)

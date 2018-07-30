@@ -126,6 +126,20 @@ class TestSimpleCounter(TestCase):
 
         sub.close()
 
+    def test_listen_init(self):
+        self.counter.delete()
+
+        sub = listen(Foo)
+
+        # Recreate counter
+        self.setUp()
+        self.assertNotStored('counter')
+        foo = Foo(value=5)
+        foo.save()
+        self.assertStored('counter', b'5')
+
+        sub.close()
+
     def assertStored(self, db_name, value):
         try:
             data = Data.objects.get(name=db_name)
