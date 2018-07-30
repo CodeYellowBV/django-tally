@@ -41,7 +41,7 @@ class Subscription:
         assert not self.connected, 'Connection is already open'
         self.connected = True
         for signal, handler, sender in self._receivers:
-            signal.connect(handler, sender=sender)
+            signal.connect(handler, sender=sender, weak=False)
 
     def close(self):
         """
