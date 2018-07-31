@@ -1,8 +1,9 @@
 from django.test import TestCase
+from django.db.utils import ProgrammingError
 
 from django_tally.data.models import Data
 from django_tally.user_def.models import UserDefTally
-from django_tally.user_def.listen import listen
+from django_tally.user_def.listen import listen, on
 from django_tally.user_def.tally import instance_to_dict
 from django_tally.user_def.lang import KW, json
 
@@ -139,6 +140,33 @@ class TestSimpleCounter(TestCase):
         self.assertStored('counter', b'5')
 
         sub.close()
+
+    def test_listen_unmigrated_sender(self):
+
+        error_table = 'sender'
+
+        class Sender:
+
+            class objects:
+                @classmethod
+                def all(cls):
+                    print('supppppp')
+                    raise ProgrammingError(
+                        'relation "{}" does not exist\n'
+                        .format(error_table)
+                    )
+
+            class _meta:
+                db_table = 'sender'
+
+        with on(Foo, tallies=[Sender]):
+            pass
+
+        error_table = 'foobar'
+
+        with self.assertRaises(ProgrammingError):
+            with on(Foo, tallies=[Sender]):
+                pass
 
     def assertStored(self, db_name, value):
         try:
