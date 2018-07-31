@@ -1,5 +1,6 @@
 from django.db.models import Model
 from django.db.models.signals import post_save, post_delete
+from django.db.utils import ProgrammingError
 
 from ..subscription import Subscription
 from .tally import UserDefTallyBase
@@ -43,8 +44,15 @@ class TallySubscription(Subscription):
         super().open()
         for signal, handler, sender in self._receivers:
             if signal == post_save and handler == self.handle_post_save:
-                for instance in sender.objects.all():
-                    self._open_tally(instance)
+                try:
+                    for instance in sender.objects.all():
+                        self._open_tally(instance)
+                except ProgrammingError as e:
+                    if not str(e).startswith(
+                        'relation "{}" does not exist\n'
+                        .format(sender._meta.db_table)
+                    ):
+                        raise
 
     def close(self):
         for instance in list(self._active_tallies):
