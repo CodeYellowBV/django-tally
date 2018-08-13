@@ -73,3 +73,12 @@ class ParserTest(TestCase):
 
     def test_serialize_string(self):
         self.assertEqual(serialize('foobar"\n\t\r'), '"foobar\\"\\n\\t\\r"')
+
+    def test_parse_operators(self):
+        self.assertEqual(
+            list(parse('* / + - = != <= >= < > ->')),
+            [
+                KW('*'), KW('/'), KW('+'), KW('-'), KW('='), KW('!='),
+                KW('<='), KW('>='), KW('<'), KW('>'), KW('->'),
+            ],
+        )
