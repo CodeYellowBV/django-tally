@@ -20,7 +20,10 @@ class UserDefGroupTallyBaseNonStored(UserDefTallyBaseNonStored):
             self._get_group = get_group
 
         def get_group(self, value):
-            return run(self._get_group, Env(base_env=self._env, value=value))
+            return run(self._get_group, Env(
+                env={'value': value},
+                base_env=self._env),
+            )
 
     class Meta:
         abstract = True

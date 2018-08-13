@@ -1,3 +1,5 @@
+import json
+
 from collections.abc import MutableMapping
 
 
@@ -9,8 +11,10 @@ class Env(MutableMapping):
     An environment in the language.
     """
 
-    def __init__(self, *args, base_env=stdenv, **kwargs):
-        self.__dict = dict(*args, **kwargs)
+    def __init__(self, env=None, base_env=stdenv):
+        if env is None:
+            env = {}
+        self.__dict = env
         self.__base = base_env
         self.__base_filter = set()
 
@@ -530,6 +534,11 @@ def lang_str(args, env):
     return ''.join(str(run(arg, env)) for arg in args)
 
 
+@register('kw')
+def lang_kw(args, env):
+    return KW(lang_str(args, env))
+
+
 @register('cat')
 def lang_cat(args, env):
     return sum((list(run(arg, env)) for arg in args), [])
@@ -665,3 +674,14 @@ def lang_thread(args, env):
     for arg in args[1:]:
         body = [arg[0], body, *arg[1:]]
     return run(body, env)
+
+
+@register('get-tally')
+def lang_get_tally(args, env):
+    if len(args) != 1:
+        raise TypeError('expected 1 argument, got {}'.format(len(args)))
+    if not isinstance(args[0], KW):
+        raise TypeError('argument 0 must be KW')
+
+    from ...data.models import Data
+    return json.loads(Data.objects.get(name=args[0]).value)

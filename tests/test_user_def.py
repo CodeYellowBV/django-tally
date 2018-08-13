@@ -37,8 +37,8 @@ class TestSimpleCounter(TestCase):
         ])
         self.counter.handle_change = lang_json.dumps([
             KW('->'), KW('tally'),
-            [KW('-'), [KW('transform'), KW('old_value')]],
-            [KW('+'), [KW('transform'), KW('new_value')]],
+            [KW('-'), [KW('transform'), KW('old-value')]],
+            [KW('+'), [KW('transform'), KW('new-value')]],
         ])
         self.counter.save()
 

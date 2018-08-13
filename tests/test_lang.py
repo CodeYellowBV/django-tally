@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from django_tally.data.models import Data
 from django_tally.user_def.lang import run, KW, LangException, Env, Func
 from django_tally.user_def.lang.json import encode, decode, dumps, loads
 
@@ -485,6 +486,16 @@ class TestLang(TestCase):
         self.runExprFail([KW('->')], TypeError)
         self.runExprFail([KW('->'), 'foo', 'bar'], TypeError)
 
+    def test_get_tally(self):
+        Data(name='foo', value='5').save()
+        self.runExpr([KW('get-tally'), KW('foo')], 5)
+        self.runExprFail([KW('get-tally')], TypeError)
+        self.runExprFail([KW('get-tally'), 'foo'], TypeError)
+
+    def test_kw(self):
+        self.runExpr([KW('kw'), 'foo'], KW('foo'))
+        self.runExpr([KW('kw'), 'foo', 'bar'], KW('foobar'))
+
     # helper methods
     def setUp(self):
         self.env = Env()
@@ -514,7 +525,7 @@ class TestLang(TestCase):
 class TestEnv(TestCase):
 
     def setUp(self):
-        self.env = Env(foo=1, bar=1, base_env={'bar': 2, 'baz': 2})
+        self.env = Env(env={'foo': 1, 'bar': 1}, base_env={'bar': 2, 'baz': 2})
 
     def test_get(self):
         self.assertEqual(self.env['foo'], 1)

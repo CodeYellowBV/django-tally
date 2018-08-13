@@ -69,8 +69,8 @@ class UserDefTallyBaseNonStored(models.Model):
 
         def get_value(self, instance):
             return run(self._get_value, Env(
+                env={'instance': instance_to_dict(instance)},
                 base_env=self._env,
-                instance=instance_to_dict(instance),
             ))
 
         def get_nonexisting_value(self):
@@ -78,16 +78,18 @@ class UserDefTallyBaseNonStored(models.Model):
 
         def filter_value(self, value):
             return run(self._filter_value, Env(
+                env={'value': value},
                 base_env=self._env,
-                value=value,
             ))
 
         def handle_change(self, tally, old_value, new_value):
             return run(self._handle_change, Env(
+                env={
+                    'tally': tally,
+                    'old-value': old_value,
+                    'new-value': new_value,
+                },
                 base_env=self._env,
-                tally=tally,
-                old_value=old_value,
-                new_value=new_value,
             ))
 
     class Meta:
