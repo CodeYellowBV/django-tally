@@ -38,6 +38,7 @@ class UserDefGroupTallyBase(UserDefGroupTallyBaseNonStored):
         def __init__(self, db_name=None, **kwargs):
             super(DBStored, self).__init__(**kwargs)
             self.db_name = db_name
+            self.ensure_data()
 
     class Meta:
         abstract = True

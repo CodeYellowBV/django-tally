@@ -7,4 +7,4 @@ class Data(models.Model):
     """
 
     name = models.TextField(primary_key=True)
-    value = models.BinaryField()
+    value = models.TextField()

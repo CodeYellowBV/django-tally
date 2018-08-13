@@ -51,7 +51,7 @@ class TestValueCounter(TestCase):
     def test_counter(self):
         with self.counter.as_tally().on(Foo):
             # Initial value
-            self.assertNotStored()
+            self.assertStoredGroups({})
             # Save model with value 1
             foo1 = Foo(value=1)
             foo1.save()
@@ -85,7 +85,7 @@ class TestValueCounter(TestCase):
                 .format(self.counter.db_name)
             )
 
-        groups = json.loads(data.value.decode())
+        groups = json.loads(data.value)
         for key in values:
             if key not in groups:
                 groups[key] = super(Group, self.counter.as_tally()).get_tally()
@@ -99,7 +99,3 @@ class TestValueCounter(TestCase):
                 '    {!r}: {!r} != {!r},'.format(*error)
                 for error in errors
             )))
-
-    def assertNotStored(self):
-        with self.assertRaises(Data.DoesNotExist):
-            Data.objects.get(name=self.counter.db_name)
