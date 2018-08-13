@@ -3,21 +3,8 @@ from django.db import models
 from ..data import DBStored
 from ..tally import Tally
 
-from .lang import run, Env, json, KW
-
-
-def instance_to_dict(instance):
-    res = {KW('__class__'): type(instance).__name__}
-    for field in instance._meta.get_fields():
-        if not field.concrete or field.many_to_many:
-            continue
-        if isinstance(field, models.ForeignKey):
-            res[KW(field.name)] = getattr(instance, field.name + '_id')
-        elif isinstance(field, models.FileField):
-            res[KW(field.name)] = getattr(instance, field.name).name
-        else:
-            res[KW(field.name)] = getattr(instance, field.name)
-    return res
+from .lang import run, Env, json
+from .instance_wrapper import InstanceWrapper
 
 
 class UserDefTallyBaseNonStored(models.Model):
@@ -69,7 +56,7 @@ class UserDefTallyBaseNonStored(models.Model):
 
         def get_value(self, instance):
             return run(self._get_value, Env(
-                env={'instance': instance_to_dict(instance)},
+                env={'instance': InstanceWrapper(instance)},
                 base_env=self._env,
             ))
 

@@ -6,10 +6,9 @@ from django.db.utils import ProgrammingError
 from django_tally.data.models import Data
 from django_tally.user_def.models import UserDefTally
 from django_tally.user_def.listen import listen, on
-from django_tally.user_def.tally import instance_to_dict
 from django_tally.user_def.lang import KW, json as lang_json
 
-from .testapp.models import Foo, Baz
+from .testapp.models import Foo
 
 
 class TestSimpleCounter(TestCase):
@@ -65,18 +64,6 @@ class TestSimpleCounter(TestCase):
     def test_counter_refreshed(self):
         self.counter.refresh_from_db()
         self.test_counter()
-
-    def test_instance_to_dict(self):
-        foo = Foo()
-        foo.save()
-        baz = Baz(foo=foo)
-        baz.save()
-        self.assertEqual(instance_to_dict(baz), {
-            KW('__class__'): 'Baz',
-            KW('id'): baz.id,
-            KW('foo'): foo.id,
-            KW('file'): None,
-        })
 
     def test_listen(self):
         sub = listen(Foo)

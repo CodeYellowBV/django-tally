@@ -1,4 +1,4 @@
-from unittest import TestCase
+from django.test import TestCase
 
 from django_tally.data.models import Data
 from django_tally.user_def.lang import run, KW, LangException, Env, Func
