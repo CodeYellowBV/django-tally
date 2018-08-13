@@ -82,3 +82,15 @@ class ParserTest(TestCase):
                 KW('<='), KW('>='), KW('<'), KW('>'), KW('->'),
             ],
         )
+
+    def test_parse_constants(self):
+        self.assertEqual(
+            list(parse('null true false')),
+            [None, True, False],
+        )
+
+    def test_serialize_constants(self):
+        self.assertEqual(
+            serialize([None, True, False]),
+            '(null true false)',
+        )

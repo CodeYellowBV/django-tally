@@ -6,6 +6,8 @@ OPERATORS = [
     '->', '*', '/', '+', '-', '=', '!=', '<=', '>=', '<', '>',
 ]
 TOKENS = [
+    ('NULL', r'null'),
+    ('BOOL', r'true|false'),
     ('FLOAT', r'[+-]?\d+\.\d+'),
     ('INT', r'[+-]?\d+'),
     ('KW', (
@@ -69,6 +71,10 @@ def parse_tokens(tokens, outer=True, sexpr=False):
                 KW('quote'),
                 next(parse_tokens(tokens, outer=False, sexpr=False)),
             ]
+        elif token == 'NULL':
+            yield None
+        elif token == 'BOOL':
+            yield body == 'true'
         elif token == 'KW':
             yield KW(body)
         elif token == 'FLOAT':

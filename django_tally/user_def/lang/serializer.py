@@ -4,6 +4,12 @@ from .lang import KW
 def serialize(body, many=False):
     if many:
         return '\n'.join(map(serialize, body))
+    elif body is None:
+        return 'null'
+    elif body is True:
+        return 'true'
+    elif body is False:
+        return 'false'
     elif isinstance(body, (int, float, KW)):
         return str(body)
     elif isinstance(body, str):
