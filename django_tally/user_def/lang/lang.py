@@ -88,7 +88,7 @@ class Func:
     """
 
     def __init__(self, params, body, env, name='<anonymous>'):
-        self.params = params
+        self.spec = [KW('list'), *params]
         self.body = body
         self.env = env
         self.name = name
@@ -97,17 +97,9 @@ class Func:
             self.env[name] = self
 
     def __call__(self, args, env):
-        if len(args) != len(self.params):
-            raise LangException(TypeError(
-                'expected {} argument{}, got {}'.format(
-                    len(self.params),
-                    '' if len(self.params) == 1 else 's',
-                    len(args),
-                )
-            ), [self.name])
         func_env = Env(base_env=self.env)
-        args = [run(arg, env) for arg in args]
-        func_env.update(zip(self.params, args))
+        args = [KW('quote'), [run(arg, env) for arg in args]]
+        lang_def([self.spec, args], func_env)
         try:
             return run(self.body, func_env)
         except LangException as exc:
@@ -404,10 +396,61 @@ def lang_if(args, env):
 def lang_def(args, env):
     if len(args) != 2:
         raise TypeError('expected 2 arguments, got {}'.format(len(args)))
-    if not isinstance(args[0], KW):
-        raise TypeError('argument 0 must be a keyword')
-    value = run(args[1], env)
-    env[args[0].value] = value
+
+    spec, value = args
+    value = run(value, env)
+
+    if isinstance(spec, KW):
+        if spec.value != '_':
+            env[spec.value] = value
+    elif (
+        isinstance(spec, list) and
+        len(spec) >= 1 and
+        spec[0] == KW('list')
+    ):
+        assert isinstance(value, list), 'value must be a list'
+        spec = spec[1:]
+        assert len(value) == len(spec), 'value has incorrect length'
+        for subargs in zip(spec, value):
+            lang_def(list(subargs), env)
+    elif (
+        isinstance(spec, list) and
+        len(spec) >= 1 and
+        spec[0] == KW('tuple')
+    ):
+        assert isinstance(value, tuple), 'value must be a tuple'
+        spec = spec[1:]
+        assert len(value) == len(spec), 'value has incorrect length'
+        for subargs in zip(spec, value):
+            lang_def(list(subargs), env)
+    elif (
+        isinstance(spec, list) and
+        len(spec) >= 1 and
+        spec[0] == KW('dict')
+    ):
+        assert isinstance(value, dict), 'value must be a dict'
+        spec = {
+            run(key, env): subspec
+            for key, subspec in zip(spec[1::2], spec[2::2])
+        }
+        assert len(value) == len(spec), 'value has incorrect length'
+        for key, subspec in spec.items():
+            assert key in value, 'value lacks key: ' + str(key)
+            lang_def([subspec, value[key]], env)
+    elif (
+        isinstance(spec, list) and
+        len(spec) >= 1 and
+        spec[0] == KW('set')
+    ):
+        assert isinstance(value, set), 'value must be a set'
+        spec = {run(key, env) for key in spec[1:]}
+        assert len(value) == len(spec), 'value has incorrect length'
+        for key in spec:
+            assert key in value, 'value lacks value: ' + str(key)
+    else:
+        spec = run(spec)
+        assert value == spec, 'value has incorrect value'
+
     return value
 
 
@@ -421,6 +464,13 @@ def lang_undef(args, env):
     return res
 
 
+@register('def?')
+def lang_def_check(args, env):
+    if not all(isinstance(arg, KW) for arg in args):
+        raise TypeError('all arguments must be a keyword')
+    return all(arg.value in env for arg in args)
+
+
 @register('fn')
 def lang_fn(args, env):
     if len(args) < 2:
@@ -428,16 +478,13 @@ def lang_fn(args, env):
             'expected at least 2 arguments, got {}'
             .format(len(args))
         )
-    if not (
-        isinstance(args[0], list) and
-        all(isinstance(param, KW) for param in args[0])
-    ):
-        raise TypeError('argument 0 must be list of keywords')
+    if not isinstance(args[0], list):
+        raise TypeError('argument 0 must be a list')
     if len(args) > 2:
         body = [KW('do')] + list(args[1:])
     else:
         body = args[1]
-    return Func([param.value for param in args[0]], body, env)
+    return Func(args[0], body, env)
 
 
 @register('defn')
@@ -449,17 +496,14 @@ def lang_defn(args, env):
         )
     if not isinstance(args[0], KW):
         raise TypeError('argument 0 must be a keyword')
-    if not (
-        isinstance(args[1], list) and
-        all(isinstance(param, KW) for param in args[1])
-    ):
-        raise TypeError('argument 1 must be list of keywords')
+    if not isinstance(args[1], list):
+        raise TypeError('argument 1 must be a list')
     name = args[0].value
     if len(args) > 3:
         body = [KW('do')] + args[2:]
     else:
         body = args[2]
-    func = Func([param.value for param in args[1]], body, env, name=name)
+    func = Func(args[1], body, env, name=name)
     return func
 
 

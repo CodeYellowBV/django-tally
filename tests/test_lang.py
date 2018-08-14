@@ -105,7 +105,7 @@ class TestLang(TestCase):
 
     def test_func_call_wrong_args(self):
         self.runExpr([KW('defn'), KW('id'), [KW('x')], 'x'])
-        self.runExprFail([KW('id')], TypeError, 'expected 1 argument, got 0')
+        self.runExprFail([KW('id')], AssertionError)
 
     def test_func_call_contains_exception(self):
         self.runExpr([KW('defn'), KW('func'), [], [KW('/'), 1, 0]])
@@ -333,7 +333,24 @@ class TestLang(TestCase):
         self.assertEqual(self.env['foo'], 1)
 
         self.runExprFail([KW('def')], TypeError)
-        self.runExprFail([KW('def'), 'foo', 1], TypeError)
+        self.runExprFail([KW('def'), 'foo', 1], AssertionError)
+
+    def test_def_match_tuple(self):
+        self.assertNotIn('foo', self.env)
+        self.runExpr([KW('def'), [KW('tuple'), KW('foo')], [KW('tuple'), 1]])
+        self.assertEqual(self.env['foo'], 1)
+
+    def test_def_match_dict(self):
+        self.assertNotIn('foo', self.env)
+        self.runExpr([
+            KW('def'),
+            [KW('dict'), True, KW('foo')],
+            [KW('dict'), True, 1],
+        ])
+        self.assertEqual(self.env['foo'], 1)
+
+    def test_def_match_set(self):
+        self.runExpr([KW('def'), [KW('set'), 1, 2, 3], [KW('set'), 1, 2, 3]])
 
     def test_undef(self):
         self.env['foo'] = 1
@@ -345,6 +362,14 @@ class TestLang(TestCase):
         self.assertNotIn('list', self.env)
 
         self.runExprFail([KW('undef'), 'foo'], TypeError)
+
+    def test_def_check(self):
+        self.assertNotIn('foo', self.env)
+        self.runExpr([KW('def?'), KW('foo')], False)
+        self.env['foo'] = 1
+        self.runExpr([KW('def?'), KW('foo')], True)
+
+        self.runExprFail([KW('def?'), 'foo'], TypeError)
 
     def test_fn(self):
         self.runExpr(
@@ -364,7 +389,7 @@ class TestLang(TestCase):
         )
 
         self.runExprFail([KW('fn')], TypeError)
-        self.runExprFail([KW('fn'), ['x'], [KW('x')]], TypeError)
+        self.runExprFail([KW('fn'), 'foo', 'bar'], TypeError)
 
     def test_defn(self):
         self.runExpr([
@@ -381,7 +406,7 @@ class TestLang(TestCase):
 
         self.runExprFail([KW('defn')], TypeError)
         self.runExprFail([KW('defn'), 'foo', [KW('x')], [KW('x')]], TypeError)
-        self.runExprFail([KW('defn'), KW('foo'), ['x'], [KW('x')]], TypeError)
+        self.runExprFail([KW('defn'), KW('foo'), 'bar', 'baz'], TypeError)
 
     def test_len(self):
         self.runExpr(
@@ -471,7 +496,7 @@ class TestLang(TestCase):
         values = [
             None, KW('foo'), 'foo', 1, 1.5, {'foo': 1}, ['bar'],
             ('foo', 'bar'), {'foo', 'bar', 'baz'},
-            Func(['foo'], KW('foo'), self.env),
+            Func([KW('foo')], KW('foo'), self.env),
         ]
         for name, type_check in type_checks.items():
             with self.subTest(name):
@@ -504,7 +529,7 @@ class TestLang(TestCase):
     # helper methods
     def setUp(self):
         self.env = Env()
-        self.identity = RunCountedFunc(['x'], KW('x'), self.env, 'id')
+        self.identity = RunCountedFunc([KW('x')], KW('x'), self.env, 'id')
 
     def reset(self):
         self.env = Env()
