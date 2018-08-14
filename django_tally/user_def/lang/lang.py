@@ -598,7 +598,13 @@ def lang_kw(args, env):
 
 @register('cat')
 def lang_cat(args, env):
-    return sum((list(run(arg, env)) for arg in args), [])
+    res = []
+    for arg in args:
+        arg = run(arg, env)
+        if isinstance(arg, dict):
+            arg = arg.items()
+        res.extend(arg)
+    return res
 
 
 @register('split')
@@ -742,3 +748,27 @@ def lang_get_tally(args, env):
 
     from ...data.models import Data
     return json.loads(Data.objects.get(name=args[0]).value)
+
+
+@register('for')
+def lang_for(args, env):
+    if len(args) < 2:
+        raise TypeError(
+            'expected at least 2 argument, got {}'
+            .format(len(args))
+        )
+    spec, col, *body = args
+    if len(body) == 1:
+        body = body[0]
+    else:
+        body = [KW('do'), *body]
+
+    col = run(col, env)
+    if isinstance(col, dict):
+        col = col.items()
+
+    res = None
+    for item in col:
+        lang_def([spec, [KW('quote'), item]], env)
+        res = run(body, env)
+    return res

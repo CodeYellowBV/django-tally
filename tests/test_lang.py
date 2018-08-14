@@ -458,8 +458,9 @@ class TestLang(TestCase):
         self.runExpr([
             KW('cat'),
             [KW('list'), 'foo'],
-            [KW('tuple'), 'bar']
-        ], ['foo', 'bar'])
+            [KW('tuple'), 'bar'],
+            [KW('dict'), 'foo', 'bar'],
+        ], ['foo', 'bar', ('foo', 'bar')])
 
     def test_split(self):
         self.runExpr([KW('split'), 'foo,bar,baz', ','], ['foo', 'bar', 'baz'])
@@ -525,6 +526,19 @@ class TestLang(TestCase):
     def test_kw(self):
         self.runExpr([KW('kw'), 'foo'], KW('foo'))
         self.runExpr([KW('kw'), 'foo', 'bar'], KW('foobar'))
+
+    def test_for(self):
+        self.env['foo'] = 0
+        self.runExpr([
+            KW('for'),
+            [KW('tuple'), KW('_'), KW('n')],
+            [KW('dict'), 1, 1, 2, 2, 3, 3],
+            [KW('def'), KW('foo'), [KW('+'), KW('foo'), KW('n')]],
+            [KW('def'), KW('foo'), [KW('+'), KW('foo'), KW('n')]],
+        ])
+        self.assertEqual(self.env['foo'], 12)
+
+        self.runExprFail([KW('for')], TypeError)
 
     # helper methods
     def setUp(self):
