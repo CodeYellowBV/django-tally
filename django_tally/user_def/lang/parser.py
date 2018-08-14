@@ -25,6 +25,7 @@ TOKENS = [
     ('DICT_OPEN', r'\#\{'),
     ('SET_OPEN', r'\#\['),
     ('QUOTE', r'\''),
+    ('PIN', r'\^'),
 
     ('WHITESPACE', r'\s+'),
     ('COMMENT', r';[^\n]*\n'),
@@ -96,6 +97,11 @@ def parse_tokens(tokens, outer=True, close=None):
                 raise ValueError('Unexpected ' + CLOSE_REP[token])
         elif token == 'QUOTE':
             yield [KW('quote'), next(parse_tokens(tokens, outer=False))]
+        elif token == 'PIN':
+            yield [
+                KW('quote'),
+                [KW('unquote'), next(parse_tokens(tokens, outer=False))],
+            ]
         elif token == 'NULL':
             yield None
         elif token == 'BOOL':

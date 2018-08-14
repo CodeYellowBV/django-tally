@@ -31,9 +31,15 @@ def serialize(body, many=False):
         )
     elif isinstance(body, list):
         if len(body) == 2 and body[0] == KW('quote'):
-            return '\'{}'.format(serialize(body[1]))
-        elif len(body) >= 1 and body[0] in COLLECTIONS:
-            sym_open, sym_close = COLLECTIONS[body[0]]
-            return sym_open + ' '.join(map(serialize, body[1:])) + sym_close
+            if len(body[1]) == 2 and body[1][0] == KW('unquote'):
+                return '^{}'.format(serialize(body[1][1]))
+            else:
+                return '\'{}'.format(serialize(body[1]))
         else:
-            return '({})'.format(' '.join(map(serialize, body)))
+            if len(body) >= 1 and body[0] in COLLECTIONS:
+                sym_open, sym_close = COLLECTIONS[body[0]]
+                body = body[1:]
+            else:
+                sym_open = '('
+                sym_close = ')'
+            return sym_open + ' '.join(map(serialize, body)) + sym_close
