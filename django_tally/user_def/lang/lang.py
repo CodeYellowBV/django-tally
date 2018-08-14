@@ -206,10 +206,23 @@ def lang_dict(args, env):
 def lang_quote(args, env):
     if len(args) != 1:
         raise TypeError('expected 1 argument, got {}'.format(len(args)))
-    return args[0]
+    if isinstance(args[0], list):
+        if (
+            len(args[0]) >= 1 and
+            isinstance(args[0][0], KW) and
+            args[0][0].value == 'unquote'
+        ):
+            assert len(args[0]) == 2, (
+                'Exactly one value must follow after unquote'
+            )
+            return run(args[0][1], env)
+        else:
+            return [lang_quote([subarg], env) for subarg in args[0]]
+    else:
+        return args[0]
 
 
-@register('unquote')
+@register('eval')
 def lang_unquote(args, env):
     if len(args) != 1:
         raise TypeError('expected 1 argument, got {}'.format(len(args)))
@@ -606,57 +619,57 @@ def lang_func_check(args, env):
     return all(isinstance(run(arg, env), Func) for arg in args)
 
 
-@register('not-null?')
+@register('not_null?')
 def lang_not_null_check(args, env):
     return not lang_null_check(args, env)
 
 
-@register('not-int?')
+@register('not_int?')
 def lang_not_int_check(args, env):
     return not lang_int_check(args, env)
 
 
-@register('not-float?')
+@register('not_float?')
 def lang_not_float_check(args, env):
     return not lang_float_check(args, env)
 
 
-@register('not-bool?')
+@register('not_bool?')
 def lang_not_bool_check(args, env):
     return not lang_bool_check(args, env)
 
 
-@register('not-str?')
+@register('not_str?')
 def lang_not_str_check(args, env):
     return not lang_str_check(args, env)
 
 
-@register('not-list?')
+@register('not_list?')
 def lang_not_list_check(args, env):
     return not lang_list_check(args, env)
 
 
-@register('not-dict?')
+@register('not_dict?')
 def lang_not_dict_check(args, env):
     return not lang_dict_check(args, env)
 
 
-@register('not-tuple?')
+@register('not_tuple?')
 def lang_not_tuple_check(args, env):
     return not lang_tuple_check(args, env)
 
 
-@register('not-set?')
+@register('not_set?')
 def lang_not_set_check(args, env):
     return not lang_set_check(args, env)
 
 
-@register('not-kw?')
+@register('not_kw?')
 def lang_not_kw_check(args, env):
     return not lang_kw_check(args, env)
 
 
-@register('not-func?')
+@register('not_func?')
 def lang_not_func_check(args, env):
     return not lang_func_check(args, env)
 
@@ -676,7 +689,7 @@ def lang_thread(args, env):
     return run(body, env)
 
 
-@register('get-tally')
+@register('get_tally')
 def lang_get_tally(args, env):
     if len(args) != 1:
         raise TypeError('expected 1 argument, got {}'.format(len(args)))

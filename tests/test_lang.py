@@ -146,12 +146,17 @@ class TestLang(TestCase):
         self.runExpr([KW('quote'), [1, 2, 3]], [1, 2, 3])
         self.runExprFail([KW('quote')], TypeError)
 
-    def test_unquote(self):
         self.runExpr(
-            [KW('unquote'), [KW('list'), [KW('quote'), KW('+')], 1, 2]],
+            [KW('quote'), [1, 2, [KW('unquote'), [KW('+'), 1, 2]]]],
+            [1, 2, 3],
+        )
+
+    def test_eval(self):
+        self.runExpr(
+            [KW('eval'), [KW('list'), [KW('quote'), KW('+')], 1, 2]],
             3,
         )
-        self.runExprFail([KW('unquote')], TypeError)
+        self.runExprFail([KW('eval')], TypeError)
 
     def test_add(self):
         self.runExpr([KW('+'), 1, 2], 3)
@@ -441,27 +446,27 @@ class TestLang(TestCase):
     def test_typechecks(self):
         type_checks = {
             'null?': lambda x: x is None,
-            'not-null?': lambda x: x is not None,
+            'not_null?': lambda x: x is not None,
             'int?': lambda x: isinstance(x, int),
-            'not-int?': lambda x: not isinstance(x, int),
+            'not_int?': lambda x: not isinstance(x, int),
             'float?': lambda x: isinstance(x, float),
-            'not-float?': lambda x: not isinstance(x, float),
+            'not_float?': lambda x: not isinstance(x, float),
             'bool?': lambda x: isinstance(x, bool),
-            'not-bool?': lambda x: not isinstance(x, bool),
+            'not_bool?': lambda x: not isinstance(x, bool),
             'str?': lambda x: isinstance(x, str),
-            'not-str?': lambda x: not isinstance(x, str),
+            'not_str?': lambda x: not isinstance(x, str),
             'list?': lambda x: isinstance(x, list),
-            'not-list?': lambda x: not isinstance(x, list),
+            'not_list?': lambda x: not isinstance(x, list),
             'dict?': lambda x: isinstance(x, dict),
-            'not-dict?': lambda x: not isinstance(x, dict),
+            'not_dict?': lambda x: not isinstance(x, dict),
             'tuple?': lambda x: isinstance(x, tuple),
-            'not-tuple?': lambda x: not isinstance(x, tuple),
+            'not_tuple?': lambda x: not isinstance(x, tuple),
             'set?': lambda x: isinstance(x, set),
-            'not-set?': lambda x: not isinstance(x, set),
+            'not_set?': lambda x: not isinstance(x, set),
             'kw?': lambda x: isinstance(x, KW),
-            'not-kw?': lambda x: not isinstance(x, KW),
+            'not_kw?': lambda x: not isinstance(x, KW),
             'func?': lambda x: isinstance(x, Func),
-            'not-func?': lambda x: not isinstance(x, Func),
+            'not_func?': lambda x: not isinstance(x, Func),
         }
         values = [
             None, KW('foo'), 'foo', 1, 1.5, {'foo': 1}, ['bar'],
@@ -488,9 +493,9 @@ class TestLang(TestCase):
 
     def test_get_tally(self):
         Data(name='foo', value='5').save()
-        self.runExpr([KW('get-tally'), KW('foo')], 5)
-        self.runExprFail([KW('get-tally')], TypeError)
-        self.runExprFail([KW('get-tally'), 'foo'], TypeError)
+        self.runExpr([KW('get_tally'), KW('foo')], 5)
+        self.runExprFail([KW('get_tally')], TypeError)
+        self.runExprFail([KW('get_tally'), 'foo'], TypeError)
 
     def test_kw(self):
         self.runExpr([KW('kw'), 'foo'], KW('foo'))
