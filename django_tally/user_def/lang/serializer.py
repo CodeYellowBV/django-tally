@@ -1,6 +1,14 @@
 from .lang import KW
 
 
+COLLECTIONS = {
+    KW('list'): ('[', ']'),
+    KW('tuple'): ('{', '}'),
+    KW('dict'): ('#{', '}'),
+    KW('set'): ('#[', ']'),
+}
+
+
 def serialize(body, many=False):
     if many:
         return '\n'.join(map(serialize, body))
@@ -24,5 +32,8 @@ def serialize(body, many=False):
     elif isinstance(body, list):
         if len(body) == 2 and body[0] == KW('quote'):
             return '\'{}'.format(serialize(body[1]))
+        elif len(body) >= 1 and body[0] in COLLECTIONS:
+            sym_open, sym_close = COLLECTIONS[body[0]]
+            return sym_open + ' '.join(map(serialize, body[1:])) + sym_close
         else:
             return '({})'.format(' '.join(map(serialize, body)))

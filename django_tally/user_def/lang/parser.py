@@ -12,18 +12,42 @@ TOKENS = [
     ('INT', r'[+-]?\d+'),
     ('KW', (
         r'|'.join(map(re.escape, OPERATORS)) +
-        r'|[A-Za-z_][A-Za-z_-]*[?!]?'
+        r'|[A-Za-z_][A-Za-z0-9_]*[?!]?'
     )),
     ('STRING', r'"([^\\"]|\\.)*"'),
 
     ('SEXPR_OPEN', r'\('),
     ('SEXPR_CLOSE', r'\)'),
+    ('LIST_OPEN', r'\['),
+    ('LIST_CLOSE', r'\]'),
+    ('TUPLE_OPEN', r'\{'),
+    ('TUPLE_CLOSE', r'\}'),
+    ('DICT_OPEN', r'\#\{'),
+    ('SET_OPEN', r'\#\['),
     ('QUOTE', r'\''),
 
     ('WHITESPACE', r'\s+'),
     ('COMMENT', r';[^\n]*\n'),
 ]
 IGNORE = {'WHITESPACE', 'COMMENT'}
+CLOSER = {
+    'SEXPR_OPEN': 'SEXPR_CLOSE',
+    'LIST_OPEN': 'LIST_CLOSE',
+    'TUPLE_OPEN': 'TUPLE_CLOSE',
+    'DICT_OPEN': 'TUPLE_CLOSE',
+    'SET_OPEN': 'LIST_CLOSE',
+}
+INIT = {
+    'LIST_OPEN': KW('list'),
+    'TUPLE_OPEN': KW('tuple'),
+    'DICT_OPEN': KW('dict'),
+    'SET_OPEN': KW('set'),
+}
+CLOSE_REP = {
+    'SEXPR_CLOSE': ')',
+    'LIST_CLOSE': ']',
+    'TUPLE_CLOSE': '}',
+}
 TOKEN_RE = re.compile(r'|'.join(
     r'(?P<{}>{})'.format(token, regexp)
     for token, regexp in TOKENS
@@ -43,7 +67,7 @@ def tokenize(body):
     yield ('EOF', '')
 
 
-def parse_tokens(tokens, outer=True, sexpr=False):
+def parse_tokens(tokens, outer=True, close=None):
     tokens = iter(tokens)
 
     while True:
@@ -59,18 +83,19 @@ def parse_tokens(tokens, outer=True, sexpr=False):
                 return
             else:
                 raise ValueError('Unexpected EOF')
-        elif token == 'SEXPR_OPEN':
-            yield list(parse_tokens(tokens, outer=False, sexpr=True))
-        elif token == 'SEXPR_CLOSE':
-            if sexpr:
+        elif token.endswith('_OPEN'):
+            tail = parse_tokens(tokens, outer=False, close=CLOSER[token])
+            if token in INIT:
+                yield [INIT[token], *tail]
+            else:
+                yield list(tail)
+        elif token.endswith('_CLOSE'):
+            if close == token:
                 return
             else:
-                raise ValueError('Unexpected )')
+                raise ValueError('Unexpected ' + CLOSE_REP[token])
         elif token == 'QUOTE':
-            yield [
-                KW('quote'),
-                next(parse_tokens(tokens, outer=False, sexpr=False)),
-            ]
+            yield [KW('quote'), next(parse_tokens(tokens, outer=False))]
         elif token == 'NULL':
             yield None
         elif token == 'BOOL':
