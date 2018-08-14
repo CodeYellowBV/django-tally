@@ -73,8 +73,8 @@ class UserDefTallyBaseNonStored(models.Model):
             return run(self._handle_change, Env(
                 env={
                     'tally': tally,
-                    'old-value': old_value,
-                    'new-value': new_value,
+                    'old_value': old_value,
+                    'new_value': new_value,
                 },
                 base_env=self._env,
             ))

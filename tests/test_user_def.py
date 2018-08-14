@@ -19,7 +19,7 @@ class TestSimpleCounter(TestCase):
             KW('defn'), KW('transform'), [KW('instance')], [
                 KW('if'), [
                     KW('and'),
-                    [KW('not-null?'), KW('instance')],
+                    [KW('not_null?'), KW('instance')],
                     [
                         KW('='),
                         [KW('instance'), [KW('quote'), KW('__class__')]],
@@ -36,8 +36,8 @@ class TestSimpleCounter(TestCase):
         ])
         self.counter.handle_change = lang_json.dumps([
             KW('->'), KW('tally'),
-            [KW('-'), [KW('transform'), KW('old-value')]],
-            [KW('+'), [KW('transform'), KW('new-value')]],
+            [KW('-'), [KW('transform'), KW('old_value')]],
+            [KW('+'), [KW('transform'), KW('new_value')]],
         ])
         self.counter.save()
 
@@ -79,7 +79,7 @@ class TestSimpleCounter(TestCase):
             KW('defn'), KW('transform'), [KW('instance')], [
                 KW('if'), [
                     KW('and'),
-                    [KW('not-null?'), KW('instance')],
+                    [KW('not_null?'), KW('instance')],
                     [
                         KW('='),
                         [KW('instance'), [KW('quote'), KW('__class__')]],

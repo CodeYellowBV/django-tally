@@ -16,7 +16,7 @@ class TestValueCounter(TestCase):
             KW('defn'), KW('transform'), [KW('value')], [
                 KW('if'), [
                     KW('and'),
-                    [KW('not-null?'), KW('value')],
+                    [KW('not_null?'), KW('value')],
                     [
                         KW('='),
                         [KW('value'), [KW('quote'), KW('__class__')]],
@@ -31,7 +31,7 @@ class TestValueCounter(TestCase):
         self.counter.get_group = json.dumps([
             KW('if'), [
                 KW('and'),
-                [KW('not-null?'), KW('value')],
+                [KW('not_null?'), KW('value')],
                 [
                     KW('='),
                     [KW('value'), [KW('quote'), KW('__class__')]],
@@ -43,8 +43,8 @@ class TestValueCounter(TestCase):
         ])
         self.counter.handle_change = json.dumps([
             KW('->'), KW('tally'),
-            [KW('-'), [KW('transform'), KW('old-value')]],
-            [KW('+'), [KW('transform'), KW('new-value')]],
+            [KW('-'), [KW('transform'), KW('old_value')]],
+            [KW('+'), [KW('transform'), KW('new_value')]],
         ])
         self.counter.save()
 
