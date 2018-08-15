@@ -26,6 +26,7 @@ TOKENS = [
     ('SET_OPEN', r'\#\['),
     ('QUOTE', r'\''),
     ('PIN', r'\^'),
+    ('SPREAD', r'\&'),
 
     ('WHITESPACE', r'\s+'),
     ('COMMENT', r';[^\n]*\n'),
@@ -43,6 +44,12 @@ INIT = {
     'TUPLE_OPEN': KW('tuple'),
     'DICT_OPEN': KW('dict'),
     'SET_OPEN': KW('set'),
+}
+INTO = {
+    'LIST_OPEN': KW('into_list'),
+    'TUPLE_OPEN': KW('into_tuple'),
+    'DICT_OPEN': KW('into_dict'),
+    'SET_OPEN': KW('into_set'),
 }
 CLOSE_REP = {
     'SEXPR_CLOSE': ')',
@@ -84,12 +91,10 @@ def parse_tokens(tokens, outer=True, close=None):
                 return
             else:
                 raise ValueError('Unexpected EOF')
+        elif token == 'SEXPR_OPEN':
+            yield list(parse_tokens(tokens, outer=False, close='SEXPR_CLOSE'))
         elif token.endswith('_OPEN'):
-            tail = parse_tokens(tokens, outer=False, close=CLOSER[token])
-            if token in INIT:
-                yield [INIT[token], *tail]
-            else:
-                yield list(tail)
+            yield _parse_tokens_spread(tokens, token)
         elif token.endswith('_CLOSE'):
             if close == token:
                 return
@@ -126,6 +131,70 @@ def parse_tokens(tokens, outer=True, close=None):
                         char = '\r'
                 string += char
             yield string
+        else:
+            raise ValueError('Unexpected token ' + token)
+
+
+class PeekIter:
+
+    def __init__(self, iterable):
+        self._it = iter(iterable)
+        self._peek = None
+        self._peeked = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._peeked:
+            res = self._peek
+            self._peek = None
+            self._peeked = False
+            return res
+        return next(self._it)
+
+    def peek(self):
+        if not self._peeked:
+            self._peek = next(self._it)
+            self._peeked = True
+        return self._peek
+
+    def has_next(self):
+        try:
+            self.peek()
+        except StopIteration:
+            return False
+        else:
+            return True
+
+
+def _parse_tokens_spread(tokens, kind):
+    tokens = PeekIter(tokens)
+    nodes = parse_tokens(tokens, outer=False, close=CLOSER[kind])
+
+    res = [INTO[kind], [INIT[kind]]]
+    while True:
+        if tokens.has_next() and tokens.peek()[0] == 'SPREAD':
+            next(tokens)
+            if len(res[-1]) == 1:
+                res.pop()
+            try:
+                res.append(next(nodes))
+            except StopIteration:
+                raise ValueError('Expected expression to spread')
+            res.append([INIT[kind]])
+            continue
+
+        try:
+            res[-1].append(next(nodes))
+        except StopIteration:
+            break
+
+    if len(res) == 2:
+        res = res[1]
+    elif len(res[-1]) == 1:
+        res.pop()
+    return res
 
 
 def parse(body):

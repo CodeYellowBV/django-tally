@@ -104,3 +104,46 @@ class ParserTest(TestCase):
             serialize([None, True, False]),
             '(null true false)',
         )
+
+    def test_parse_spread(self):
+        self.assertEqual(
+            list(parse('[&foo 1 2 3 &bar 4 5 6 &baz]'))[0],
+            [
+                KW('into_list'),
+                KW('foo'),
+                [KW('list'), 1, 2, 3],
+                KW('bar'),
+                [KW('list'), 4, 5, 6],
+                KW('baz'),
+            ],
+        )
+
+    def test_serialize_spread(self):
+        self.assertEqual(
+            serialize([
+                KW('into_list'),
+                [KW('list'), 1, 2, 3],
+                KW('foo'),
+                [KW('list'), 4, 5],
+                KW('bar'),
+            ]),
+            '[1 2 3 &foo 4 5 &bar]',
+        )
+
+    def test_parse_unexpected_token(self):
+        with self.assertRaises(ValueError) as cm:
+            list(parse_tokens([('FOO', '')]))
+        self.assertEqual(
+            str(cm.exception),
+            'Unexpected token FOO',
+        )
+
+    def test_parse_col_unexpected_end(self):
+        with self.assertRaises(ValueError) as cm:
+            list(parse_tokens([('LIST_OPEN', '[')]))
+        self.assertEqual(str(cm.exception), 'Expected more tokens')
+
+    def test_parse_col_spread_without_expression(self):
+        with self.assertRaises(ValueError) as cm:
+            list(parse('[&]'))
+        self.assertEqual(str(cm.exception), 'Expected expression to spread')

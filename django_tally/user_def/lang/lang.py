@@ -139,6 +139,7 @@ def run(body, env=None):
             params = [[KW('quote'), func], *body[1:]]
             func = lang_get
         elif not callable(func):
+            print(func)
             raise LangException(ValueError(
                 'first argument of s-expression does not evaluate to callable'
             ))
@@ -447,6 +448,91 @@ def lang_def(args, env):
         assert len(value) == len(spec), 'value has incorrect length'
         for key in spec:
             assert key in value, 'value lacks value: ' + str(key)
+    elif (
+        isinstance(spec, list) and
+        len(spec) >= 1 and
+        spec[0] == KW('into_list')
+    ):
+        assert isinstance(value, list), 'value must be a list'
+        for subspec in spec[1:]:
+            if (
+                isinstance(subspec, list) and
+                len(subspec) >= 1 and
+                subspec[0] == KW('list')
+            ):
+                assert len(value) >= len(subspec) - 1, (
+                    'value has incorrect length'
+                )
+                subvalue = value[:len(subspec) - 1]
+                value = value[len(subspec) - 1:]
+            else:
+                subvalue = value
+                value = []
+            lang_def([subspec, [KW('quote'), subvalue]], env)
+    elif (
+        isinstance(spec, list) and
+        len(spec) >= 1 and
+        spec[0] == KW('into_tuple')
+    ):
+        assert isinstance(value, tuple), 'value must be a tuple'
+        for subspec in spec[1:]:
+            if (
+                isinstance(subspec, list) and
+                len(subspec) >= 1 and
+                subspec[0] == KW('tuple')
+            ):
+                assert len(value) >= len(subspec) - 1, (
+                    'value has incorrect length'
+                )
+                subvalue = value[:len(subspec) - 1]
+                value = value[len(subspec) - 1:]
+            else:
+                subvalue = value
+                value = ()
+            lang_def([subspec, [KW('quote'), subvalue]], env)
+    elif (
+        isinstance(spec, list) and
+        len(spec) >= 1 and
+        spec[0] == KW('into_dict')
+    ):
+        assert isinstance(value, dict), 'value must be a dict'
+        value = dict(value)
+        for subspec in spec[1:]:
+            if (
+                isinstance(subspec, list) and
+                len(subspec) >= 1 and
+                subspec[0] == KW('dict')
+            ):
+                for key, subsubspec in zip(subspec[1::2], subspec[2::2]):
+                    key = run(key, env)
+                    assert key in value, 'value lacks key: ' + str(key)
+                    subvalue = value.pop(key)
+                    lang_def([subsubspec, [KW('quote'), subvalue]], env)
+            else:
+                subvalue = value
+                value = {}
+                lang_def([subspec, [KW('quote'), subvalue]], env)
+    elif (
+        isinstance(spec, list) and
+        len(spec) >= 1 and
+        spec[0] == KW('into_set')
+    ):
+        assert isinstance(value, set), 'value must be a set'
+        value = set(value)
+        for subspec in spec[1:]:
+            if (
+                isinstance(subspec, list) and
+                len(subspec) >= 1 and
+                subspec[0] == KW('set')
+            ):
+                for key in subspec[1:]:
+                    key = run(key, env)
+                    assert key in value, 'value lacks value: ' + str(key)
+                    value.remove(key)
+            else:
+                subvalue = value
+                value = set()
+                lang_def([subspec, [KW('quote'), subvalue]], env)
     else:
         spec = run(spec)
         assert value == spec, 'value has incorrect value'
@@ -772,3 +858,31 @@ def lang_for(args, env):
         lang_def([spec, [KW('quote'), item]], env)
         res = run(body, env)
     return res
+
+
+def _lang_into(args, env):
+    for arg in args:
+        arg = run(arg, env)
+        if isinstance(arg, dict):
+            arg = arg.items()
+        yield from arg
+
+
+@register('into_list')
+def lang_into_list(args, env):
+    return list(_lang_into(args, env))
+
+
+@register('into_tuple')
+def lang_into_tuple(args, env):
+    return tuple(_lang_into(args, env))
+
+
+@register('into_dict')
+def lang_into_dict(args, env):
+    return dict(_lang_into(args, env))
+
+
+@register('into_set')
+def lang_into_set(args, env):
+    return set(_lang_into(args, env))

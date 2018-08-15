@@ -1,6 +1,13 @@
 from .lang import KW
 
 
+INTOS = {
+    KW('into_list'): KW('list'),
+    KW('into_tuple'): KW('tuple'),
+    KW('into_dict'): KW('dict'),
+    KW('into_set'): KW('set'),
+}
+
 COLLECTIONS = {
     KW('list'): ('[', ']'),
     KW('tuple'): ('{', '}'),
@@ -35,6 +42,21 @@ def serialize(body, many=False):
                 return '^{}'.format(serialize(body[1][1]))
             else:
                 return '\'{}'.format(serialize(body[1]))
+        elif len(body) >= 1 and body[0] in INTOS:
+            items = []
+
+            for child in body[1:]:
+                if (
+                    isinstance(child, list) and
+                    len(child) >= 1 and
+                    child[0] == INTOS[body[0]]
+                ):
+                    items.extend(map(serialize, child[1:]))
+                else:
+                    items.append('&{}'.format(serialize(child)))
+
+            sym_open, sym_close = COLLECTIONS[INTOS[body[0]]]
+            return sym_open + ' '.join(items) + sym_close
         else:
             if len(body) >= 1 and body[0] in COLLECTIONS:
                 sym_open, sym_close = COLLECTIONS[body[0]]

@@ -352,6 +352,55 @@ class TestLang(TestCase):
     def test_def_match_set(self):
         self.runExpr([KW('def'), [KW('set'), 1, 2, 3], [KW('set'), 1, 2, 3]])
 
+    def test_def_match_into_list(self):
+        self.runExpr([
+            KW('def'),
+            [
+                KW('into_list'),
+                [KW('list'), 1, 2, 3],
+                KW('foo'),
+            ],
+            [KW('list'), 1, 2, 3, 4, 5],
+        ])
+        self.assertEqual(self.env['foo'], [4, 5])
+
+    def test_def_match_into_tuple(self):
+        self.runExpr([
+            KW('def'),
+            [
+                KW('into_tuple'),
+                [KW('tuple'), 1, 2, 3],
+                KW('foo'),
+            ],
+            [KW('tuple'), 1, 2, 3, 4, 5],
+        ])
+        self.assertEqual(self.env['foo'], (4, 5))
+
+    def test_def_match_into_dict(self):
+        self.runExpr([
+            KW('def'),
+            [
+                KW('into_dict'),
+                [KW('dict'), "foo", KW('foo')],
+                KW('other'),
+            ],
+            [KW('dict'), "foo", 1, "bar", 2, "baz", 3],
+        ])
+        self.assertEqual(self.env['foo'], 1)
+        self.assertEqual(self.env['other'], {"bar": 2, "baz": 3})
+
+    def test_def_match_into_set(self):
+        self.runExpr([
+            KW('def'),
+            [
+                KW('into_set'),
+                [KW('set'), "foo"],
+                KW('other'),
+            ],
+            [KW('set'), "foo", "bar", "baz"],
+        ])
+        self.assertEqual(self.env['other'], {"bar", "baz"})
+
     def test_undef(self):
         self.env['foo'] = 1
         self.runExpr([KW('undef'), KW('foo')])
@@ -539,6 +588,53 @@ class TestLang(TestCase):
         self.assertEqual(self.env['foo'], 12)
 
         self.runExprFail([KW('for')], TypeError)
+
+    def test_into_list(self):
+        self.runExpr(
+            [
+                KW('into_list'),
+                [KW('quote'), [1, 2, 3]],
+                [KW('quote'), (4, 5, 6)],
+                [KW('quote'), {'foo': 'bar'}],
+                [KW('quote'), {'baz'}],
+            ],
+            [1, 2, 3, 4, 5, 6, ('foo', 'bar'), 'baz'],
+        )
+
+    def test_into_tuple(self):
+        self.runExpr(
+            [
+                KW('into_tuple'),
+                [KW('quote'), [1, 2, 3]],
+                [KW('quote'), (4, 5, 6)],
+                [KW('quote'), {'foo': 'bar'}],
+                [KW('quote'), {'baz'}],
+            ],
+            (1, 2, 3, 4, 5, 6, ('foo', 'bar'), 'baz'),
+        )
+
+    def test_into_dict(self):
+        self.runExpr(
+            [
+                KW('into_dict'),
+                [KW('quote'), [(1, 2), (3, 4)]],
+                [KW('quote'), ((5, 6),)],
+                [KW('quote'), {'foo': 'bar'}],
+            ],
+            {1: 2, 3: 4, 5: 6, 'foo': 'bar'},
+        )
+
+    def test_into_set(self):
+        self.runExpr(
+            [
+                KW('into_set'),
+                [KW('quote'), [1, 2, 3]],
+                [KW('quote'), (4, 5, 6)],
+                [KW('quote'), {'foo': 'bar'}],
+                [KW('quote'), {'baz'}],
+            ],
+            {1, 2, 3, 4, 5, 6, ('foo', 'bar'), 'baz'},
+        )
 
     # helper methods
     def setUp(self):
