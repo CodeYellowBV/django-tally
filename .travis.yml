@@ -12,6 +12,8 @@ cache:
 install:
   - python3 setup.py install
   - pip install flake8 codecov coverage
+before_script:
+  - psql -c 'CREATE DATABASE "django-tally-test";' -U postgres
 script:
   - flake8
   - coverage run setup.py test
