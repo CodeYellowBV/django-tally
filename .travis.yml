@@ -7,6 +7,8 @@ env:
   - CY_INSIDE_TRAVIS=1
 services:
   - postgresql
+addons:
+  postgresql: "9.6"
 cache:
   pip: true
 install:
