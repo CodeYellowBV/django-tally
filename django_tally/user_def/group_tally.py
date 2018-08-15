@@ -1,17 +1,22 @@
 from django.db import models
+from django.contrib.postgres import fields as pg_fields
 
 from ..data import DBStored
 from ..group import Group
 from .tally import UserDefTallyBaseNonStored
-from .lang import json, run, Env
+from .lang import run, Env
+from .lang.json import decode
 
 
 class UserDefGroupTallyBaseNonStored(UserDefTallyBaseNonStored):
 
-    get_group = models.TextField()
+    get_group = pg_fields.JSONField(
+        default=None,
+        blank=True, null=True,
+    )
 
     def as_tally(self, **kwargs):
-        return super().as_tally(get_group=json.loads(self.get_group), **kwargs)
+        return super().as_tally(get_group=decode(self.get_group), **kwargs)
 
     class UserTally(Group, UserDefTallyBaseNonStored.UserTally):
 

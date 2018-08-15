@@ -1,28 +1,48 @@
 from django.db import models
+from django.contrib.postgres import fields as pg_fields
 
 from ..data import DBStored
 from ..tally import Tally
 
-from .lang import run, Env, json
+from .lang import run, Env
+from .lang.json import decode
 from .instance_wrapper import InstanceWrapper
 
 
 class UserDefTallyBaseNonStored(models.Model):
 
-    base = models.TextField(default='null')
-    get_tally = models.TextField()
-    get_value = models.TextField(default='"k:instance"')
-    get_nonexisting_value = models.TextField(default='null')
-    filter_value = models.TextField(default='true')
-    handle_change = models.TextField()
+    base = pg_fields.JSONField(
+        default=None,
+        blank=True, null=True,
+    )
+    get_tally = pg_fields.JSONField(
+        default=None,
+        blank=True, null=True,
+    )
+    get_value = pg_fields.JSONField(
+        default="k:instance",
+        blank=True, null=True,
+    )
+    get_nonexisting_value = pg_fields.JSONField(
+        default=None,
+        blank=True, null=True,
+    )
+    filter_value = pg_fields.JSONField(
+        default=True,
+        blank=True, null=True,
+    )
+    handle_change = pg_fields.JSONField(
+        default=None,
+        blank=True, null=True,
+    )
 
     def as_tally(self, **kwargs):
-        base = json.loads(self.base)
-        get_tally = json.loads(self.get_tally)
-        get_value = json.loads(self.get_value)
-        get_nonexisting_value = json.loads(self.get_nonexisting_value)
-        filter_value = json.loads(self.filter_value)
-        handle_change = json.loads(self.handle_change)
+        base = decode(self.base)
+        get_tally = decode(self.get_tally)
+        get_value = decode(self.get_value)
+        get_nonexisting_value = decode(self.get_nonexisting_value)
+        filter_value = decode(self.filter_value)
+        handle_change = decode(self.handle_change)
 
         env = Env()
         run(base, env)

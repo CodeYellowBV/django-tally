@@ -3,7 +3,8 @@ from django.test import TestCase
 from django_tally import Group
 from django_tally.data.models import Data
 from django_tally.user_def.models import UserDefGroupTally
-from django_tally.user_def.lang import KW, json
+from django_tally.user_def.lang import KW
+from django_tally.user_def.lang.json import encode
 
 from .testapp.models import Foo
 
@@ -12,7 +13,7 @@ class TestValueCounter(TestCase):
 
     def setUp(self):
         self.counter = UserDefGroupTally(db_name='counter')
-        self.counter.base = json.dumps([
+        self.counter.base = encode([
             KW('defn'), KW('transform'), [KW('value')], [
                 KW('if'), [
                     KW('and'),
@@ -27,8 +28,8 @@ class TestValueCounter(TestCase):
                 0,
             ]
         ])
-        self.counter.get_tally = json.dumps(0)
-        self.counter.get_group = json.dumps([
+        self.counter.get_tally = encode(0)
+        self.counter.get_group = encode([
             KW('if'), [
                 KW('and'),
                 [KW('not_null?'), KW('value')],
@@ -41,7 +42,7 @@ class TestValueCounter(TestCase):
             [KW('str'), [KW('value'), [KW('quote'), KW('value')]]],
             None,
         ])
-        self.counter.handle_change = json.dumps([
+        self.counter.handle_change = encode([
             KW('->'), KW('tally'),
             [KW('-'), [KW('transform'), KW('old_value')]],
             [KW('+'), [KW('transform'), KW('new_value')]],
@@ -85,7 +86,7 @@ class TestValueCounter(TestCase):
                 .format(self.counter.db_name)
             )
 
-        groups = json.loads(data.value)
+        groups = data.value
         for key in values:
             if key not in groups:
                 groups[key] = super(Group, self.counter.as_tally()).get_tally()

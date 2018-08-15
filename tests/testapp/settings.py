@@ -1,9 +1,20 @@
+import os
+
 DEBUG = True
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'HOST': 'db',
+        'PORT': 5432,
+    } if (
+        os.path.exists('/.dockerenv') and
+        not os.environ.get('CY_RUNNING_INSIDE_TRAVIS')
+    ) else {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'django-tally-test',
     },
 }
 

@@ -3,6 +3,10 @@ language: python
 python:
   - "3.5"
   - "3.6"
+env:
+  - CY_INSIDE_TRAVIS=1
+services:
+  - postgresql
 cache:
   pip: true
 install:

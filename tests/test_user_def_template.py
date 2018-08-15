@@ -1,9 +1,8 @@
-import json
-
 from django.test import TestCase
 
 from django_tally.data.models import Data
-from django_tally.user_def.lang import json as lang_json, parse
+from django_tally.user_def.lang import parse
+from django_tally.user_def.lang.json import encode
 from django_tally.user_def.models import UserDefTemplate
 
 from .testapp.models import Foo
@@ -16,7 +15,7 @@ AGGREGATE_PARAMS = {
         'filter_value', 'transform', 'get_group',
     ],
 }
-AGGREGATE_TEMPLATE = """
+AGGREGATE_TEMPLATE = list(parse("""
 (do
   (def agg_base '(do
     (defn agg_sub (tally value)
@@ -54,10 +53,10 @@ AGGREGATE_TEMPLATE = """
       (put res key (eval key))))
 
   res)
-"""
+"""))[0]
 
 SUM_PARAMS = {'optional': AGGREGATE_PARAMS['optional']}
-SUM_TEMPLATE = """(do
+SUM_TEMPLATE = list(parse("""(do
   (def res #{
     'get_tally '0
     'add '(+ tally value)
@@ -73,21 +72,21 @@ SUM_TEMPLATE = """(do
       (put res key (eval key))))
 
   res)
-"""
+"""))[0]
 
 
 class TestSimpleCounter(TestCase):
 
     def setUp(self):
         self.aggregate_template = UserDefTemplate(
-            params=json.dumps(AGGREGATE_PARAMS),
-            template=lang_json.dumps(list(parse(AGGREGATE_TEMPLATE))[0]),
+            params=AGGREGATE_PARAMS,
+            template=encode(AGGREGATE_TEMPLATE),
         )
         self.aggregate_template.save()
 
         self.sum_template = UserDefTemplate(
-            params=json.dumps(SUM_PARAMS),
-            template=lang_json.dumps(list(parse(SUM_TEMPLATE))[0]),
+            params=SUM_PARAMS,
+            template=encode(SUM_TEMPLATE),
             parent=self.aggregate_template,
         )
         self.sum_template.save()
@@ -143,4 +142,4 @@ class TestSimpleCounter(TestCase):
         except Data.DoesNotExist:
             self.fail('No data associated with {}'.format(db_name))
         else:
-            self.assertEqual(data.value, json.dumps(value))
+            self.assertEqual(data.value, value)

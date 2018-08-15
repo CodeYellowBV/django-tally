@@ -1,5 +1,3 @@
-import json
-
 from django.test import TestCase
 
 from django_tally import Tally, Sum
@@ -46,4 +44,4 @@ class StoreTest(TestCase):
         except Data.DoesNotExist:
             self.fail('No data associated with {}'.format(db_name))
         else:
-            self.assertEqual(data.value, json.dumps(value))
+            self.assertEqual(data.value, value)

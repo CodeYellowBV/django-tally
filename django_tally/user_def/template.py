@@ -1,9 +1,10 @@
 from importlib import import_module
-import json
 
 from django.db import models
+from django.contrib.postgres import fields as pg_fields
 
-from .lang import run, Env, json as lang_json, KW
+from .lang import run, Env, KW
+from .lang.json import encode, decode
 
 
 class UserDefTemplateBase(models.Model):
@@ -11,8 +12,11 @@ class UserDefTemplateBase(models.Model):
     TALLY = 'django_tally.user_def.models.UserDefTally'
     GROUP_TALLY = 'django_tally.user_def.models.UserDefGroupTally'
 
-    params = models.TextField()
-    template = models.TextField()
+    params = pg_fields.JSONField(default=dict, blank=True)
+    template = pg_fields.JSONField(
+        default=None,
+        blank=True, null=True,
+    )
     parent = models.ForeignKey(
         'self', models.CASCADE,
         blank=True, null=True,
@@ -24,7 +28,7 @@ class UserDefTemplateBase(models.Model):
         args = self.transform(dict(*args, **kwargs))
         print(args)
         args = {
-            key: lang_json.dumps(value)
+            key: encode(value)
             for key, value in args.items()
         }
         print(args)
@@ -41,10 +45,8 @@ class UserDefTemplateBase(models.Model):
 
     def transform(self, args):
         # Assert given args are correct
-        params = json.loads(self.params)
-
-        req = set(params.get('required', []))
-        opt = set(params.get('optional', []))
+        req = set(self.params.get('required', []))
+        opt = set(self.params.get('optional', []))
         given = set(args)
 
         missing = req - given
@@ -59,10 +61,7 @@ class UserDefTemplateBase(models.Model):
         # Run template to get new args
         args = {
             key.value if isinstance(key, KW) else key: value
-            for key, value in run(
-                lang_json.loads(self.template),
-                Env(env=args),
-            ).items()
+            for key, value in run(decode(self.template), Env(env=args)).items()
         }
 
         # Run args through parent if there is one

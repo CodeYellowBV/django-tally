@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres import fields as pg_fields
 
 
 class Data(models.Model):
@@ -7,4 +8,4 @@ class Data(models.Model):
     """
 
     name = models.TextField(primary_key=True)
-    value = models.TextField()
+    value = pg_fields.JSONField(blank=True, null=True)

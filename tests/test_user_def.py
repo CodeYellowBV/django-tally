@@ -1,12 +1,11 @@
-import json
-
 from django.test import TestCase
 from django.db.utils import ProgrammingError
 
 from django_tally.data.models import Data
 from django_tally.user_def.models import UserDefTally
 from django_tally.user_def.listen import listen, on
-from django_tally.user_def.lang import KW, json as lang_json
+from django_tally.user_def.lang import KW
+from django_tally.user_def.lang.json import encode
 
 from .testapp.models import Foo
 
@@ -15,7 +14,7 @@ class TestSimpleCounter(TestCase):
 
     def setUp(self):
         self.counter = UserDefTally(db_name='counter')
-        self.counter.base = lang_json.dumps([
+        self.counter.base = encode([
             KW('defn'), KW('transform'), [KW('instance')], [
                 KW('if'), [
                     KW('and'),
@@ -29,12 +28,12 @@ class TestSimpleCounter(TestCase):
                 0,
             ],
         ])
-        self.counter.get_tally = lang_json.dumps(0)
-        self.counter.get_value = lang_json.dumps(KW('instance'))
-        self.counter.filter_value = lang_json.dumps([
+        self.counter.get_tally = encode(0)
+        self.counter.get_value = encode(KW('instance'))
+        self.counter.filter_value = encode([
             KW('>='), [KW('transform'), KW('value')], 3
         ])
-        self.counter.handle_change = lang_json.dumps([
+        self.counter.handle_change = encode([
             KW('->'), KW('tally'),
             [KW('-'), [KW('transform'), KW('old_value')]],
             [KW('+'), [KW('transform'), KW('new_value')]],
@@ -75,7 +74,7 @@ class TestSimpleCounter(TestCase):
         foo.save()
         self.assertStored('counter', 5)
         # Make values count twice
-        self.counter.base = lang_json.dumps([
+        self.counter.base = encode([
             KW('defn'), KW('transform'), [KW('instance')], [
                 KW('if'), [
                     KW('and'),
@@ -162,4 +161,4 @@ class TestSimpleCounter(TestCase):
         except Data.DoesNotExist:
             self.fail('No data associated with {}'.format(db_name))
         else:
-            self.assertEqual(data.value, json.dumps(value))
+            self.assertEqual(data.value, value)

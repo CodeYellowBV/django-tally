@@ -1,5 +1,3 @@
-import json
-
 from django.db import transaction
 
 
@@ -19,19 +17,14 @@ class DBStored:
         from .models import Data
 
         if not Data.objects.filter(name=self.db_name).exists():
-            Data(
-                name=self.db_name,
-                value=json.dumps(self.get_tally()),
-            ).save()
+            Data(name=self.db_name, value=self.get_tally()).save()
 
     def handle_change(self, tally, old_value, new_value):
         from .models import Data
 
         with transaction.atomic():
             data = Data.objects.get(name=self.db_name)
-
-            tally = json.loads(data.value)
-            tally = super().handle_change(tally, old_value, new_value)
-
-            data.value = json.dumps(tally)
+            data.value = super().handle_change(
+                data.value, old_value, new_value
+            )
             data.save()

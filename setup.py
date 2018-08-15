@@ -26,5 +26,6 @@ setup(
     ],
     install_requires=[
         'django>=1.11',
+        'psycopg2>=2.5.4',
     ],
 )
