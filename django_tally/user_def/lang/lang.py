@@ -89,8 +89,8 @@ class Func:
     A function in the language.
     """
 
-    def __init__(self, params, body, env, name='<anonymous>'):
-        self.spec = [KW('list'), *params]
+    def __init__(self, spec, body, env, name='<anonymous>'):
+        self.spec = spec
         self.body = body
         self.env = env
         self.name = name
@@ -571,8 +571,14 @@ def lang_fn(args, env):
             'expected at least 2 arguments, got {}'
             .format(len(args))
         )
-    if not isinstance(args[0], list):
-        raise TypeError('argument 0 must be a list')
+    if not (
+        isinstance(args[0], list) and
+        len(args[0]) >= 1 and
+        args[0][0] in {KW('list'), KW('list_into')}
+    ):
+        raise TypeError(
+            'argument 0 must be a list that starts with list or list_into'
+        )
     if len(args) > 2:
         body = [KW('do')] + list(args[1:])
     else:
@@ -589,8 +595,14 @@ def lang_defn(args, env):
         )
     if not isinstance(args[0], KW):
         raise TypeError('argument 0 must be a keyword')
-    if not isinstance(args[1], list):
-        raise TypeError('argument 1 must be a list')
+    if not (
+        isinstance(args[1], list) and
+        len(args[1]) >= 1 and
+        args[1][0] in {KW('list'), KW('list_into')}
+    ):
+        raise TypeError(
+            'argument 1 must be a list that starts with list or list_into'
+        )
     name = args[0].value
     if len(args) > 3:
         body = [KW('do')] + args[2:]

@@ -15,7 +15,7 @@ class TestSimpleCounter(TestCase):
     def setUp(self):
         self.counter = UserDefTally(db_name='counter')
         self.counter.base = encode([
-            KW('defn'), KW('transform'), [KW('instance')], [
+            KW('defn'), KW('transform'), [KW('list'), KW('instance')], [
                 KW('if'), [
                     KW('and'),
                     [KW('not_null?'), KW('instance')],
@@ -75,7 +75,7 @@ class TestSimpleCounter(TestCase):
         self.assertStored('counter', 5)
         # Make values count twice
         self.counter.base = encode([
-            KW('defn'), KW('transform'), [KW('instance')], [
+            KW('defn'), KW('transform'), [KW('list'), KW('instance')], [
                 KW('if'), [
                     KW('and'),
                     [KW('not_null?'), KW('instance')],

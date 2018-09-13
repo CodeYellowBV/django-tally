@@ -8,7 +8,7 @@ from django_tally.user_def.lang.json import encode, decode, dumps, loads
 sample = [
     KW('do'),
     [
-        KW('defn'), KW('fib'), [KW('n')],
+        KW('defn'), KW('fib'), [KW('list'), KW('n')],
         [
             KW('if'), [KW('in'), [KW('quote'), [0, 1]], KW('n')],
             1,
@@ -26,7 +26,7 @@ sample = [
 encoded_sample = [
     'k:do',
     [
-        'k:defn', 'k:fib', ['k:n'],
+        'k:defn', 'k:fib', ['k:list', 'k:n'],
         [
             'k:if', ['k:in', ['k:quote', [0, 1]], 'k:n'],
             1,
@@ -41,11 +41,12 @@ encoded_sample = [
     ['k:str', 's:fib(10) = ', 'k:res'],
     'k:res',
 ]
+# (defn fib [n] (if (in (list 0 1) n) 1 (+ (fib (- n 1)) (fib (- n 2)))))
 json_sample = (
     '['
         '"k:do", '
         '['
-            '"k:defn", "k:fib", ["k:n"], '
+            '"k:defn", "k:fib", ["k:list", "k:n"], '
             '['
                 '"k:if", ["k:in", ["k:quote", [0, 1]], "k:n"], '
                 '1, '
@@ -104,11 +105,11 @@ class TestLang(TestCase):
         self.assertNotEqual(hash(KW('foo')), 'foo')
 
     def test_func_call_wrong_args(self):
-        self.runExpr([KW('defn'), KW('id'), [KW('x')], 'x'])
+        self.runExpr([KW('defn'), KW('id'), [KW('list'), KW('x')], 'x'])
         self.runExprFail([KW('id')], AssertionError)
 
     def test_func_call_contains_exception(self):
-        self.runExpr([KW('defn'), KW('func'), [], [KW('/'), 1, 0]])
+        self.runExpr([KW('defn'), KW('func'), [KW('list')], [KW('/'), 1, 0]])
         self.runExprFail([KW('func')], ZeroDivisionError, trace=['func', '/'])
 
     def test_undefined_name(self):
@@ -422,13 +423,19 @@ class TestLang(TestCase):
 
     def test_fn(self):
         self.runExpr(
-            [[KW('fn'), [KW('x')], [KW('*'), KW('x'), KW('x')]], 2],
+            [
+                [
+                    KW('fn'), [KW('list'), KW('x')],
+                    [KW('*'), KW('x'), KW('x')],
+                ],
+                2,
+            ],
             4,
         )
         self.runExpr(
             [
                 [
-                    KW('fn'), [KW('x')],
+                    KW('fn'), [KW('list'), KW('x')],
                     [KW('def'), KW('n'), KW('x')],
                     [KW('*'), KW('n'), KW('n')],
                 ],
@@ -442,19 +449,26 @@ class TestLang(TestCase):
 
     def test_defn(self):
         self.runExpr([
-            KW('defn'), KW('sqr'), [KW('x')],
+            KW('defn'), KW('sqr'), [KW('list'), KW('x')],
             [KW('*'), KW('x'), KW('x')],
         ])
         self.runExpr([KW('sqr'), 3], 9)
         self.runExpr([
-            KW('defn'), KW('sqr'), [KW('x')],
+            KW('defn'), KW('sqr'), [KW('list'), KW('x')],
             [KW('def'), KW('n'), KW('x')],
             [KW('*'), KW('n'), KW('n')],
         ])
         self.runExpr([KW('sqr'), 3], 9)
 
         self.runExprFail([KW('defn')], TypeError)
-        self.runExprFail([KW('defn'), 'foo', [KW('x')], [KW('x')]], TypeError)
+        self.runExprFail(
+            [KW('defn'), 'foo', [KW('list'), KW('x')], [KW('x')]],
+            TypeError,
+        )
+        self.runExprFail(
+            [KW('defn'), KW('foo'), [KW('x')], [KW('x')]],
+            TypeError,
+        )
         self.runExprFail([KW('defn'), KW('foo'), 'bar', 'baz'], TypeError)
 
     def test_len(self):
@@ -646,7 +660,11 @@ class TestLang(TestCase):
     # helper methods
     def setUp(self):
         self.env = Env()
-        self.identity = RunCountedFunc([KW('x')], KW('x'), self.env, 'id')
+        self.identity = RunCountedFunc(
+            [KW('list'), KW('x')],
+            KW('x'),
+            self.env, 'id',
+        )
 
     def reset(self):
         self.env = Env()

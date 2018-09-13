@@ -14,7 +14,7 @@ class TestValueCounter(TestCase):
     def setUp(self):
         self.counter = UserDefGroupTally(db_name='counter')
         self.counter.base = encode([
-            KW('defn'), KW('transform'), [KW('value')], [
+            KW('defn'), KW('transform'), [KW('list'), KW('value')], [
                 KW('if'), [
                     KW('and'),
                     [KW('not_null?'), KW('value')],

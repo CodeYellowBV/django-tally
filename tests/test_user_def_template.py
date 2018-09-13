@@ -18,13 +18,13 @@ AGGREGATE_PARAMS = {
 AGGREGATE_TEMPLATE = list(parse("""
 (do
   (def agg_base '(do
-    (defn agg_sub (tally value)
+    (defn agg_sub [tally value]
       (unquote sub))
 
-    (defn agg_add (tally value)
+    (defn agg_add [tally value]
       (unquote add))
 
-    (defn agg_trans (value)
+    (defn agg_trans [value]
       (unquote (if (def? transform)
         transform
         'value)))))
@@ -100,11 +100,11 @@ class TestSimpleCounter(TestCase):
         self.assertEqual(values, {
             'base': list(parse("""
                 (do
-                  (defn agg_sub (tally value)
+                  (defn agg_sub [tally value]
                     (- tally value))
-                  (defn agg_add (tally value)
+                  (defn agg_add [tally value]
                     (+ tally value))
-                  (defn agg_trans (value)
+                  (defn agg_trans [value]
                     value))
             """))[0],
             'handle_change': list(parse("""
