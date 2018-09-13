@@ -1,8 +1,10 @@
 import json
+import logging
 
 from collections.abc import MutableMapping
 
 
+logger = logging.getLogger(__name__)
 stdenv = {}
 
 
@@ -107,7 +109,7 @@ class Func:
             raise exc
 
 
-def run(body, env=None):
+def run(body, env=None, log=False):
     """
     Run a body of code.
 
@@ -120,35 +122,40 @@ def run(body, env=None):
     """
     if env is None:
         env = Env()
+    try:
+        if isinstance(body, KW):
+            if body.value not in env:
+                raise LangException(NameError(
+                    'name {!r} is not defined'
+                    .format(body.value)
+                ))
+            return env[body.value]
+        elif isinstance(body, list):
+            if not body:
+                raise LangException(ValueError(
+                    'can\'t execute empty s-expression'
+                ))
 
-    if isinstance(body, KW):
-        if body.value not in env:
-            raise LangException(NameError(
-                'name {!r} is not defined'
-                .format(body.value)
-            ))
-        return env[body.value]
-    elif isinstance(body, list):
-        if not body:
-            raise LangException(ValueError(
-                'can\'t execute empty s-expression'
-            ))
+            func = run(body[0], env)
+            if isinstance(func, (list, dict, tuple)):
+                params = [[KW('quote'), func], *body[1:]]
+                func = lang_get
+            elif not callable(func):
+                raise LangException(ValueError(
+                    'first argument of s-expression does not evaluate to '
+                    'callable'
+                ))
+            else:
+                params = body[1:]
 
-        func = run(body[0], env)
-        if isinstance(func, (list, dict, tuple)):
-            params = [[KW('quote'), func], *body[1:]]
-            func = lang_get
-        elif not callable(func):
-            print(func)
-            raise LangException(ValueError(
-                'first argument of s-expression does not evaluate to callable'
-            ))
+            return func(params, env)
         else:
-            params = body[1:]
-
-        return func(params, env)
-    else:
-        return body
+            return body
+    except LangException as e:
+        if log:
+            logger.error(str(e))
+        else:
+            raise
 
 
 # Below here only stdenv implementation

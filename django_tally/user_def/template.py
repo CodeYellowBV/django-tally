@@ -26,12 +26,10 @@ class UserDefTemplateBase(models.Model):
     def __call__(self, *args, save=False, **kwargs):
         db_name = kwargs.pop('db_name')
         args = self.transform(dict(*args, **kwargs))
-        print(args)
         args = {
             key: encode(value)
             for key, value in args.items()
         }
-        print(args)
 
         tally_spec = self.GROUP_TALLY if 'get_group' in args else self.TALLY
         module, _, name = tally_spec.rpartition('.')

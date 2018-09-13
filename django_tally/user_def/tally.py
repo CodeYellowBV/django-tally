@@ -45,7 +45,7 @@ class UserDefTallyBaseNonStored(models.Model):
         handle_change = decode(self.handle_change)
 
         env = Env()
-        run(base, env)
+        run(base, env, log=True)
 
         return self.UserTally(
             env=env,
@@ -72,32 +72,45 @@ class UserDefTallyBaseNonStored(models.Model):
             self._handle_change = handle_change
 
         def get_tally(self):
-            return run(self._get_tally, Env(base_env=self._env))
+            return run(self._get_tally, Env(base_env=self._env), log=True)
 
         def get_value(self, instance):
-            return run(self._get_value, Env(
-                env={'instance': InstanceWrapper(instance)},
-                base_env=self._env,
-            ))
+            return run(
+                self._get_value,
+                Env(
+                    env={'instance': InstanceWrapper(instance)},
+                    base_env=self._env,
+                ),
+                log=True,
+            )
 
         def get_nonexisting_value(self):
-            return run(self._get_nonexisting_value, Env(base_env=self._env))
+            return run(
+                self._get_nonexisting_value,
+                Env(base_env=self._env),
+                log=True,
+            )
 
         def filter_value(self, value):
-            return run(self._filter_value, Env(
-                env={'value': value},
-                base_env=self._env,
-            ))
+            return run(
+                self._filter_value,
+                Env(env={'value': value}, base_env=self._env),
+                log=True,
+            )
 
         def handle_change(self, tally, old_value, new_value):
-            return run(self._handle_change, Env(
-                env={
-                    'tally': tally,
-                    'old_value': old_value,
-                    'new_value': new_value,
-                },
-                base_env=self._env,
-            ))
+            return run(
+                self._handle_change,
+                Env(
+                    env={
+                        'tally': tally,
+                        'old_value': old_value,
+                        'new_value': new_value,
+                    },
+                    base_env=self._env,
+                ),
+                log=True,
+            )
 
     class Meta:
         abstract = True

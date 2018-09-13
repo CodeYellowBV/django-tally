@@ -636,6 +636,13 @@ class TestLang(TestCase):
             {1, 2, 3, 4, 5, 6, ('foo', 'bar'), 'baz'},
         )
 
+    def test_run_log(self):
+        # Without log
+        with self.assertRaises(LangException):
+            run([KW('/'), 1, 0])
+        # With log
+        run([KW('/'), 1, 0], log=True)
+
     # helper methods
     def setUp(self):
         self.env = Env()
